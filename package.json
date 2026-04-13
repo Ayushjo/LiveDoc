@@ -1,0 +1,23 @@
+{
+  "name": "livedoc",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev:api": "pnpm --filter @livedoc/api dev",
+    "dev:web": "pnpm --filter @livedoc/web dev",
+    "dev": "pnpm --filter @livedoc/api dev & pnpm --filter @livedoc/web dev",
+    "build": "pnpm --filter @livedoc/types build && pnpm -r --filter '!@livedoc/types' build",
+    "type-check": "pnpm -r type-check",
+    "db:generate": "pnpm --filter @livedoc/api db:generate",
+    "db:push": "pnpm --filter @livedoc/api db:push",
+    "db:migrate": "pnpm --filter @livedoc/api db:migrate",
+    "db:studio": "pnpm --filter @livedoc/api db:studio"
+  },
+  "devDependencies": {
+    "typescript": "^5.4.5"
+  },
+  "engines": {
+    "node": ">=20.0.0",
+    "pnpm": ">=9.0.0"
+  }
+}

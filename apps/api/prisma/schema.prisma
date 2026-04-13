@@ -1,0 +1,229 @@
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["postgresqlExtensions"]
+}
+
+datasource db {
+  provider   = "postgresql"
+  url        = env("DATABASE_URL")
+  directUrl  = env("DIRECT_URL")
+  extensions = [vector]
+}
+
+// ─── Better Auth managed models ───────────────────────────────────────────────
+// Field names match Better Auth's expected schema exactly. Do not rename.
+
+model User {
+  id            String   @id @default(cuid())
+  name          String
+  email         String   @unique
+  emailVerified Boolean  @default(false)
+  image         String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  sessions Session[]
+  accounts Account[]
+
+  workspaces WorkspaceMember[]
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  expiresAt DateTime
+  token     String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  ipAddress String?
+  userAgent String?
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([token])
+}
+
+model Account {
+  id                    String    @id @default(cuid())
+  accountId             String
+  providerId            String
+  userId                String
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accessToken           String?   @db.Text
+  refreshToken          String?   @db.Text
+  idToken               String?   @db.Text
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  password              String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  @@unique([providerId, accountId])
+  @@index([userId])
+}
+
+model Verification {
+  id         String   @id @default(cuid())
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([identifier])
+}
+
+// ─── Application models ───────────────────────────────────────────────────────
+
+model Workspace {
+  id        String   @id @default(cuid())
+  name      String
+  slug      String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  members WorkspaceMember[]
+  sources Source[]
+}
+
+model WorkspaceMember {
+  id          String        @id @default(cuid())
+  workspaceId String
+  userId      String
+  role        WorkspaceRole @default(MEMBER)
+  joinedAt    DateTime      @default(now())
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([workspaceId, userId])
+  @@index([userId])
+  @@index([workspaceId])
+}
+
+enum WorkspaceRole {
+  OWNER
+  ADMIN
+  MEMBER
+}
+
+model Source {
+  id        String     @id @default(cuid())
+  workspaceId String
+  type        SourceType
+  name        String
+
+  // Tokens are AES-256 encrypted before storage — never stored as plaintext
+  encryptedAccessToken  String  @db.Text
+  encryptedRefreshToken String? @db.Text
+  tokenExpiresAt        DateTime?
+
+  metadata     Json       @default("{}")
+  lastSyncedAt DateTime?
+  syncStatus   SyncStatus @default(IDLE)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  documents Document[]
+  syncJobs  SyncJob[]
+
+  @@index([workspaceId])
+  @@index([workspaceId, type])
+}
+
+enum SourceType {
+  NOTION
+  GITHUB
+  LINEAR
+  GOOGLE_DRIVE
+}
+
+enum SyncStatus {
+  IDLE
+  SYNCING
+  ERROR
+}
+
+model Document {
+  id          String   @id @default(cuid())
+  sourceId    String
+  workspaceId String
+  externalId  String   // ID in the source system, e.g. Notion page ID
+  title       String
+  url         String
+  contentHash String   // SHA-256 of raw content — drives delta detection
+  lastEditedAt DateTime
+  metadata    Json     @default("{}")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  source Source  @relation(fields: [sourceId], references: [id], onDelete: Cascade)
+  chunks Chunk[]
+
+  // One externalId per source — prevents duplicate documents on re-sync
+  @@unique([sourceId, externalId])
+  @@index([workspaceId])
+  @@index([sourceId])
+}
+
+model Chunk {
+  id          String @id @default(cuid())
+  documentId  String
+  workspaceId String
+  content     String @db.Text
+  chunkIndex  Int    // Ordering within the parent document (0-based)
+  tokenCount  Int
+
+  // pgvector column — vector(1536) matches text-embedding-3-small output dims
+  // Prisma does not natively support pgvector; raw SQL is used for similarity search.
+  embedding      Unsupported("vector(1536)")?
+  embeddingModel String                       @default("text-embedding-3-small")
+
+  // Stores heading path and any other chunk-level metadata
+  // e.g. { "headingPath": ["Introduction", "How it works"] }
+  metadata  Json     @default("{}")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  document Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId])
+  @@index([documentId])
+}
+
+model SyncJob {
+  id       String        @id @default(cuid())
+  sourceId String
+  status   SyncJobStatus @default(PENDING)
+
+  triggeredBy        TriggerType
+  documentsProcessed Int         @default(0)
+  chunksCreated      Int         @default(0)
+  errorMessage       String?     @db.Text
+
+  startedAt   DateTime?
+  completedAt DateTime?
+  createdAt   DateTime  @default(now())
+
+  source Source @relation(fields: [sourceId], references: [id], onDelete: Cascade)
+
+  @@index([sourceId])
+  @@index([status])
+}
+
+enum SyncJobStatus {
+  PENDING
+  RUNNING
+  COMPLETED
+  FAILED
+}
+
+enum TriggerType {
+  MANUAL
+  WEBHOOK
+  SCHEDULED
+}
