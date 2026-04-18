@@ -101,15 +101,19 @@ queryRouter.post('/', requireAuth, async (req, res, next) => {
       return;
     }
 
-    // ── 5. Stream gpt-4o response ───────────────────────────────────────────────
+    // ── 5. Stream Claude response ────────────────────────────────────────────────
     const stream = await queryService.createStream(contextText, query);
 
-    for await (const chunk of stream) {
+    for await (const event of stream) {
       if (clientAborted) break;
 
-      const delta = chunk.choices[0]?.delta?.content ?? '';
-      if (delta) {
-        sendSSE(res, { type: 'delta', content: delta });
+      // Claude SSE emits 'content_block_delta' events with 'text_delta' deltas
+      if (
+        event.type === 'content_block_delta' &&
+        event.delta.type === 'text_delta' &&
+        event.delta.text
+      ) {
+        sendSSE(res, { type: 'delta', content: event.delta.text });
       }
     }
 
