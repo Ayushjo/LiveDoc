@@ -1,21 +1,10 @@
-import OpenAI from 'openai';
 import { db } from '../db';
+import { openai, EMBEDDING_MODEL, EMBEDDING_DIMS } from '../lib/openai';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-const EMBEDDING_MODEL = 'text-embedding-3-small';
-/** text-embedding-3-small output dimensionality — must match Prisma schema vector(1536) */
-const EMBEDDING_DIMS = 1536;
 /** OpenAI embeddings API maximum inputs per request */
 const OPENAI_BATCH_LIMIT = 100;
-
-// ─── OpenAI client ────────────────────────────────────────────────────────────
-
-if (!process.env.OPENAI_API_KEY) {
-  throw new Error('OPENAI_API_KEY environment variable is not set');
-}
-
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 

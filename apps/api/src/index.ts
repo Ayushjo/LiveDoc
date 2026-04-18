@@ -6,6 +6,7 @@ import { auth } from './auth';
 import { workspaceRouter } from './routes/workspace.routes';
 import { sourceRouter } from './routes/source.routes';
 import { syncRouter } from './routes/sync.routes';
+import { queryRouter } from './routes/query.routes';
 import { errorHandler } from './lib/errors';
 
 const app = express();
@@ -34,9 +35,7 @@ app.get('/health', (_req, res) => {
 app.use('/api/workspaces', workspaceRouter);
 app.use('/api/sources', sourceRouter);
 app.use('/api/sync', syncRouter);
-
-// Placeholder — uncommented when query pipeline is built:
-// app.use('/api/query', queryRouter);
+app.use('/api/query', queryRouter);
 
 // ── Central error handler (must be last) ──────────────────────────────────────
 app.use(errorHandler);
