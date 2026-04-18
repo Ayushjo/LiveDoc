@@ -17,7 +17,7 @@ export default function LoginPage() {
     setGoogleLoading(true);
     setError('');
     try {
-      await signIn.social({ provider: 'google', callbackURL: '/dashboard' });
+      await signIn.social({ provider: 'google', callbackURL: `${window.location.origin}/dashboard` });
     } catch {
       setError('Google sign-in failed. Please try again.');
       setGoogleLoading(false);
@@ -34,7 +34,7 @@ export default function LoginPage() {
       const { error } = await signIn.email({
         email,
         password,
-        callbackURL: '/dashboard',
+        callbackURL: `${window.location.origin}/dashboard`,
       });
 
       if (error) {
