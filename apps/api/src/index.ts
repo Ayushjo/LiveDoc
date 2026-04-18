@@ -4,6 +4,7 @@ import cors from 'cors';
 import { toNodeHandler } from 'better-auth/node';
 import { auth } from './auth';
 import { workspaceRouter } from './routes/workspace.routes';
+import { sourceRouter } from './routes/source.routes';
 import { errorHandler } from './lib/errors';
 
 const app = express();
@@ -30,9 +31,9 @@ app.get('/health', (_req, res) => {
 
 // ── API routes ────────────────────────────────────────────────────────────────
 app.use('/api/workspaces', workspaceRouter);
+app.use('/api/sources', sourceRouter);
 
 // Placeholders — uncommented as each feature is built:
-// app.use('/api/sources', sourceRouter);
 // app.use('/api/sync', syncRouter);
 // app.use('/api/query', queryRouter);
 
