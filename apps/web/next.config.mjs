@@ -1,6 +1,6 @@
-import type { NextConfig } from 'next';
+/** @type {import('next').NextConfig} */
 
-const nextConfig: NextConfig = {
+const nextConfig = {
   // Allow images from external domains as sources are added
   images: {
     remotePatterns: [
