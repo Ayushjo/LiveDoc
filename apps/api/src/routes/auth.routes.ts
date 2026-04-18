@@ -1,11 +1,16 @@
-// Phase 1 — Better Auth handles all auth routes via auth.handler().
-// This file mounts the Better Auth request handler under /api/auth/*.
-// Wired up in src/index.ts once middleware is in place.
-import { Router } from 'express';
-import { auth } from '../auth';
-import { toNodeHandler } from 'better-auth/node';
-
-export const authRouter = Router();
-
-// Better Auth handles everything under /api/auth/** (sign-in, sign-up, OAuth callbacks, sessions)
-authRouter.all('/*', toNodeHandler(auth));
+/**
+ * Auth routes are handled entirely by Better Auth via toNodeHandler(auth).
+ * They are mounted in index.ts as:  app.all('/api/auth/*', toNodeHandler(auth))
+ *
+ * Better Auth exposes these endpoints automatically:
+ *   POST  /api/auth/sign-up/email
+ *   POST  /api/auth/sign-in/email
+ *   POST  /api/auth/sign-in/social          (Google OAuth redirect)
+ *   GET   /api/auth/callback/google         (Google OAuth callback)
+ *   GET   /api/auth/session                 (get current session)
+ *   POST  /api/auth/sign-out
+ *   POST  /api/auth/forget-password
+ *   POST  /api/auth/reset-password
+ *
+ * No custom route code is needed here — this file is kept for documentation.
+ */
