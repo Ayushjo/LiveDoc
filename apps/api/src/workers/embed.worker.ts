@@ -1,15 +1,32 @@
-// Phase 1 — BullMQ worker: calls OpenAI embeddings API for a batch of chunks,
-// writes vectors to Chunk.embedding via raw SQL (pgvector).
-// TODO: implement when instructed.
 import { Worker } from 'bullmq';
 import { createRedisConnection } from '../redis';
+import { embedService } from '../services/embed.service';
 import type { EmbedBatchJobData } from '@livedoc/types';
 
+/**
+ * Embed worker — consumes jobs from the 'embed' queue.
+ *
+ * Each job embeds a batch of up to 100 chunks in a single OpenAI API call,
+ * then writes the resulting vectors to the Chunk table via raw pgvector SQL.
+ *
+ * Concurrency: 10 — allows parallelising embedding across sources.
+ * Each job is already capped at 100 chunks so we don't blow the rate limit.
+ * BullMQ retries up to 3× with exponential backoff on OpenAI transient errors.
+ */
 export const embedWorker = new Worker<EmbedBatchJobData>(
   'embed',
   async (job) => {
-    console.log(`[EmbedWorker] processing job ${job.id} — ${job.data.chunkIds.length} chunks`);
-    // TODO: call embed.service.ts
+    const { chunkIds } = job.data;
+
+    console.log(
+      `[EmbedWorker] starting job=${job.id} chunks=${chunkIds.length}`,
+    );
+
+    await embedService.embedBatch(chunkIds);
+
+    console.log(
+      `[EmbedWorker] completed job=${job.id} chunks=${chunkIds.length}`,
+    );
   },
   {
     connection: createRedisConnection(),
@@ -18,5 +35,12 @@ export const embedWorker = new Worker<EmbedBatchJobData>(
 );
 
 embedWorker.on('failed', (job, err) => {
-  console.error(`[EmbedWorker] job ${job?.id} failed:`, err.message);
+  console.error(
+    `[EmbedWorker] job=${job?.id} chunks=${job?.data.chunkIds.length} FAILED:`,
+    err.message,
+  );
+});
+
+embedWorker.on('error', (err) => {
+  console.error('[EmbedWorker] worker error:', err.message);
 });
