@@ -144,6 +144,81 @@ workspaceRouter.delete(
   },
 );
 
+/**
+ * GET /api/workspaces/:workspaceId/stats
+ *
+ * Returns real-time counts and recent sync activity for the dashboard.
+ * Auth: session + workspace membership required.
+ */
+workspaceRouter.get(
+  '/:workspaceId/stats',
+  requireAuth,
+  requireWorkspaceMember,
+  async (req, res, next) => {
+    try {
+      const { workspaceId } = req.params;
+      const { db } = await import('../db');
+
+      // Run all count queries in parallel for speed
+      const [
+        totalDocuments,
+        totalSources,
+        totalChunks,
+        embeddedChunks,
+        recentSources,
+      ] = await Promise.all([
+        db.document.count({ where: { workspaceId } }),
+        db.source.count({ where: { workspaceId } }),
+        db.chunk.count({ where: { workspaceId } }),
+        // Raw query needed — Prisma can't filter on Unsupported vector type IS NOT NULL
+        db.$queryRaw<[{ count: bigint }]>`
+          SELECT COUNT(*) AS count
+          FROM "Chunk"
+          WHERE "workspaceId" = ${workspaceId}
+            AND embedding IS NOT NULL
+        `.then((r) => Number(r[0]?.count ?? 0)),
+        db.source.findMany({
+          where: { workspaceId },
+          orderBy: { lastSyncedAt: 'desc' },
+          take: 5,
+          select: {
+            id: true,
+            name: true,
+            type: true,
+            syncStatus: true,
+            lastSyncedAt: true,
+            syncJobs: {
+              orderBy: { createdAt: 'desc' },
+              take: 1,
+              select: { status: true, createdAt: true, documentsProcessed: true },
+            },
+          },
+        }),
+      ]);
+
+      res.json({
+        data: {
+          totalDocuments,
+          totalSources,
+          totalChunks,
+          embeddedChunks,
+          recentActivity: recentSources.map((s) => ({
+            sourceId: s.id,
+            sourceName: s.name,
+            sourceType: s.type,
+            syncStatus: s.syncStatus,
+            lastSyncedAt: s.lastSyncedAt,
+            lastJob: s.syncJobs[0] ?? null,
+          })),
+        },
+        error: null,
+      });
+    } catch (err) {
+      next(err);
+    }
+  },
+);
+
 // ─── Member sub-routes ────────────────────────────────────────────────────────
 
 /**
