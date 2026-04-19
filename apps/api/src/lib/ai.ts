@@ -12,8 +12,12 @@ if (!process.env.ANTHROPIC_API_KEY) {
 /** Shared Anthropic client. Import this everywhere you need Claude. */
 export const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
-/** Model used for streaming RAG answers. */
-export const CLAUDE_MODEL = 'claude-3-5-sonnet-20241022' as const;
+/**
+ * Model used for streaming RAG answers.
+ * claude-3-haiku-20240307 is available on all Anthropic account tiers.
+ * Upgrade to claude-3-5-sonnet-20241022 once your account has access.
+ */
+export const CLAUDE_MODEL = 'claude-3-haiku-20240307' as const;
 
 // Re-export Voyage helpers so existing imports of lib/ai still work
 export { embedTexts, EMBEDDING_MODEL, EMBEDDING_DIMS } from './voyage';
