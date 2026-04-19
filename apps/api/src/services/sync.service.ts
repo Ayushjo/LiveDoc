@@ -2,7 +2,7 @@ import { db } from '../db';
 import { notionService, type NotionPageSummary } from './notion.service';
 import { sourceService } from './source.service';
 import { chunkerService } from './chunker.service';
-import { embedQueue } from '../queues';
+import { embedService } from './embed.service';
 import { NotFoundError, ForbiddenError } from '../lib/errors';
 import type { TriggerType } from '@prisma/client';
 
@@ -16,34 +16,21 @@ interface PageSyncResult {
 // ─── Internal helpers ─────────────────────────────────────────────────────────
 
 /**
- * Splits an array into chunks of size `size`.
+ * Embeds newly created chunks inline (no separate worker needed).
+ *
+ * Runs embedService.embedAll() directly in the sync worker process so that
+ * vectors are written to pgvector before the sync job completes.
+ * Errors are caught and logged — a failed embed must not abort the whole sync.
  */
-function chunkArray<T>(arr: T[], size: number): T[][] {
-  const result: T[][] = [];
-  for (let i = 0; i < arr.length; i += size) {
-    result.push(arr.slice(i, i + size));
+async function embedInline(chunkIds: string[]): Promise<void> {
+  if (chunkIds.length === 0) return;
+  try {
+    await embedService.embedAll(chunkIds);
+    console.log(`[SyncService] embedded ${chunkIds.length} chunk(s) inline`);
+  } catch (err) {
+    // Non-fatal — chunks still exist in DB; user can re-sync to retry embedding
+    console.error('[SyncService] inline embed failed (non-fatal):', err);
   }
-  return result;
-}
-
-/**
- * Enqueues embed-batch jobs for a list of chunk IDs.
- * Batches in groups of 100 (OpenAI API limit per request).
- */
-async function enqueueEmbedBatches(
-  chunkIds: string[],
-  workspaceId: string,
-): Promise<void> {
-  const batches = chunkArray(chunkIds, 100);
-  await Promise.all(
-    batches.map((batch) =>
-      embedQueue.add(
-        'embed-batch',
-        { chunkIds: batch, workspaceId },
-        { jobId: `embed-${batch[0]}-${Date.now()}` },
-      ),
-    ),
-  );
 }
 
 /**
@@ -132,7 +119,7 @@ async function processPage(
       ),
     );
 
-    await enqueueEmbedBatches(created.map((c) => c.id), workspaceId);
+    await embedInline(created.map((c) => c.id));
 
     // Increment chunksCreated on the SyncJob
     await db.syncJob.update({
@@ -298,6 +285,20 @@ export const syncService = {
           where: { id: syncJobId },
           data: { documentsProcessed },
         });
+      }
+
+      // ── Backfill any chunks that are still missing embeddings ─────────────
+      // This covers chunks created by a previous sync that ran before the
+      // embed worker was started — re-syncing will embed them now.
+      const unembedded = await db.$queryRaw<{ id: string }[]>`
+        SELECT id FROM "Chunk"
+        WHERE  "workspaceId" = ${workspaceId}
+          AND  embedding IS NULL
+        LIMIT  500
+      `;
+      if (unembedded.length > 0) {
+        console.log(`[SyncService] backfilling ${unembedded.length} un-embedded chunk(s)`);
+        await embedInline(unembedded.map((r) => r.id));
       }
 
       // ── Mark completed ────────────────────────────────────────────────────

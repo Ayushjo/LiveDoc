@@ -1,5 +1,5 @@
 import { db } from '../db';
-import { embedTexts, EMBEDDING_MODEL, EMBEDDING_DIMS } from '../lib/ai';
+import { embedTexts, EMBEDDING_MODEL, EMBEDDING_DIMS } from '../lib/voyage';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
