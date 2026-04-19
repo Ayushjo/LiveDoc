@@ -214,28 +214,24 @@ export const syncService = {
       );
     }
 
-    // Create the SyncJob record first so we have its ID for the worker
+    // Create the SyncJob record and respond immediately (202 Accepted)
     const syncJob = await db.syncJob.create({
-      data: {
-        sourceId,
-        triggeredBy,
-        status: 'PENDING',
-      },
+      data: { sourceId, triggeredBy, status: 'PENDING' },
     });
 
-    // Import here to avoid circular dependency at module load time
-    const { syncQueue } = await import('../queues');
-
-    await syncQueue.add(
-      'sync-source',
-      {
-        sourceId,
-        workspaceId: source.workspaceId,
-        syncJobId: syncJob.id,
-        triggeredBy,
-      },
-      { jobId: `sync-${sourceId}-${syncJob.id}` },
-    );
+    // Run the full sync pipeline in-process (background, non-blocking).
+    // setImmediate defers until after the current HTTP response is flushed,
+    // so the route handler returns the SyncJob immediately while the work
+    // runs in the background within the same Node.js process.
+    //
+    // For production at scale, swap this back to a BullMQ queue + worker.
+    setImmediate(() => {
+      syncService
+        .runSync(source.id, source.workspaceId, syncJob.id)
+        .catch((err) =>
+          console.error(`[SyncService] background sync failed for ${sourceId}:`, err),
+        );
+    });
 
     return syncJob;
   },
