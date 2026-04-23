@@ -277,6 +277,7 @@ export default function SourcesPage() {
                 source={source}
                 onSync={handleSync}
                 onDelete={handleDelete}
+                onScheduleChange={handleScheduleChange}
               />
             ))}
           </div>
