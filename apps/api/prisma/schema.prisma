@@ -84,9 +84,10 @@ model Workspace {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  members     WorkspaceMember[]
-  sources     Source[]
-  invitations WorkspaceInvitation[]
+  members      WorkspaceMember[]
+  sources      Source[]
+  invitations  WorkspaceInvitation[]
+  queryHistory QueryHistory[]
 }
 
 model WorkspaceInvitation {
