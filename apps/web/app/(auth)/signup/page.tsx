@@ -4,7 +4,7 @@ import { useState, Suspense } from 'react';
 import { signUp, signIn } from '@/lib/auth-client';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { Star, Loader2 } from 'lucide-react';
+import { Star, Loader2, MailCheck } from 'lucide-react';
 
 function SignupForm() {
   const searchParams = useSearchParams();
@@ -16,6 +16,7 @@ function SignupForm() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
+  const [emailSent, setEmailSent] = useState(false);
 
   // After auth, go back to the invite page so it can accept automatically,
   // or fall through to the dashboard if there's no pending invite.
