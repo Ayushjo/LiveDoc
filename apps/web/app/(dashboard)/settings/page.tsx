@@ -527,7 +527,7 @@ function MembersTab({ onToast }: { onToast: (m: string, t: 'success' | 'error') 
       )}
 
       {/* Members list */}
-      <SectionCard title={`Members (${members.length})`}>
+      <SectionCard title={`Members (${members.length}${nextCursor ? '+' : ''})`}>
         {loading ? (
           <div className="space-y-3">
             {[1, 2].map((i) => (
