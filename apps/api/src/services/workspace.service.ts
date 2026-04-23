@@ -190,20 +190,35 @@ export const workspaceService = {
   },
 
   /**
-   * Lists all members of a workspace. Any member can call this.
+   * Lists members of a workspace with cursor-based pagination.
+   * Default page size: 20. Returns nextCursor = null when no more pages.
    */
-  async listMembers(workspaceId: string) {
-    return db.workspaceMember.findMany({
+  async listMembers(
+    workspaceId: string,
+    opts: { cursor?: string; take?: number } = {},
+  ) {
+    const take = Math.min(opts.take ?? 20, 100); // hard cap at 100
+
+    const rows = await db.workspaceMember.findMany({
       where: { workspaceId },
+      take: take + 1, // fetch one extra to detect next page
+      ...(opts.cursor
+        ? { cursor: { id: opts.cursor }, skip: 1 }
+        : {}),
       include: {
         user: { select: { id: true, name: true, email: true, image: true } },
       },
       orderBy: [
-        // Owners first, then admins, then members
-        { role: 'asc' },
+        { role: 'asc' },  // OWNER → ADMIN → MEMBER
         { joinedAt: 'asc' },
       ],
     });
+
+    const hasMore = rows.length > take;
+    const members = hasMore ? rows.slice(0, take) : rows;
+    const nextCursor = hasMore ? (members[members.length - 1]?.id ?? null) : null;
+
+    return { members, nextCursor };
   },
 
   /**
