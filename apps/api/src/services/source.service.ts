@@ -58,7 +58,7 @@ export const sourceService = {
     // Generate a random nonce and persist state in Redis
     const nonce = randomBytes(32).toString('hex');
     const payload: OAuthStatePayload = { workspaceId, userId };
-    await redis.set(stateKey(nonce), JSON.stringify(payload), 'EX', OAUTH_STATE_TTL_SEC);
+    await redis.set(notionStateKey(nonce), JSON.stringify(payload), 'EX', OAUTH_STATE_TTL_SEC);
 
     return notionService.buildOAuthUrl(nonce);
   },
