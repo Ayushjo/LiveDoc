@@ -79,12 +79,17 @@ export default function SourcesPage() {
     fetchSources();
   }, [fetchSources]);
 
-  // ── Notion OAuth — redirect the browser (not a fetch) ────────────────────
+  // ── OAuth connect handlers (browser redirect, not fetch) ──────────────────
   const handleConnectNotion = () => {
     if (!activeWorkspace) return;
-    setIsConnecting(true);
-    // The API returns a 302 redirect to Notion, so we navigate the whole browser.
+    setIsConnecting('notion');
     window.location.href = `${API_URL}/api/sources/notion/connect?workspaceId=${activeWorkspace.id}`;
+  };
+
+  const handleConnectGitHub = () => {
+    if (!activeWorkspace) return;
+    setIsConnecting('github');
+    window.location.href = `${API_URL}/api/sources/github/connect?workspaceId=${activeWorkspace.id}`;
   };
 
   // ── Trigger manual sync + poll until completed ─────────────────────────────
