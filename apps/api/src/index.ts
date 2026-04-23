@@ -10,7 +10,7 @@ import { queryRouter } from './routes/query.routes';
 import { userRouter } from './routes/user.routes';
 import { invitationRouter, publicInvitationRouter } from './routes/invitation.routes';
 import { errorHandler } from './lib/errors';
-import { generalLimiter, queryLimiter, syncLimiter } from './lib/rate-limit';
+import { generalLimiter, authLimiter, queryLimiter, syncLimiter } from './lib/rate-limit';
 
 const app = express();
 const PORT = parseInt(process.env.PORT ?? '3001', 10);
