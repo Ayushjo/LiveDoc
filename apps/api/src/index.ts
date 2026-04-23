@@ -30,7 +30,9 @@ app.use(cors(corsOptions));
 app.options('*', cors(corsOptions));
 
 // ── Better Auth handler ───────────────────────────────────────────────────────
-// Must be mounted BEFORE express.json() — Better Auth reads its own body.
+// authLimiter applied first (brute-force protection), then the Better Auth handler.
+// Better Auth reads its own body so it must come before express.json().
+app.use('/api/auth', authLimiter);
 app.all('/api/auth/*', toNodeHandler(auth));
 
 // ── Body parsing ──────────────────────────────────────────────────────────────
