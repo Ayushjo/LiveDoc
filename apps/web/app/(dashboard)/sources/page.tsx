@@ -26,7 +26,7 @@ export default function SourcesPage() {
 
   const [sources, setSources] = useState<Source[]>([]);
   const [isLoadingSources, setIsLoadingSources] = useState(true);
-  const [isConnecting, setIsConnecting] = useState(false);
+  const [isConnecting, setIsConnecting] = useState<'notion' | 'github' | null>(null);
   const [banner, setBanner] = useState<BannerState>(null);
 
   // ── Handle OAuth callback redirect params ──────────────────────────────────
