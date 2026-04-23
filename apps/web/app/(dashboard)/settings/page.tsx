@@ -363,6 +363,8 @@ function MembersTab({ onToast }: { onToast: (m: string, t: 'success' | 'error') 
   const { data: session } = useSession();
 
   const [members, setMembers] = useState<Member[]>([]);
+  const [nextCursor, setNextCursor] = useState<string | null>(null);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [invitations, setInvitations] = useState<Invitation[]>([]);
   const [loading, setLoading] = useState(true);
   const [inviteEmail, setInviteEmail] = useState('');
@@ -380,10 +382,15 @@ function MembersTab({ onToast }: { onToast: (m: string, t: 'success' | 'error') 
     setLoading(true);
     try {
       const [membRes, invRes] = await Promise.all([
-        api.get<ApiResponse<Member[]>>(`/api/workspaces/${activeWorkspace.id}/members`),
+        api.get<ApiResponse<{ members: Member[]; nextCursor: string | null }>>(
+          `/api/workspaces/${activeWorkspace.id}/members`,
+        ),
         api.get<ApiResponse<Invitation[]>>(`/api/workspaces/${activeWorkspace.id}/invitations`),
       ]);
-      if (membRes.data) setMembers(membRes.data);
+      if (membRes.data) {
+        setMembers(membRes.data.members);
+        setNextCursor(membRes.data.nextCursor);
+      }
       if (invRes.data) setInvitations(invRes.data);
     } catch {
       // ignore
@@ -391,6 +398,24 @@ function MembersTab({ onToast }: { onToast: (m: string, t: 'success' | 'error') 
       setLoading(false);
     }
   }, [activeWorkspace]);
+
+  const handleLoadMore = async () => {
+    if (!activeWorkspace || !nextCursor || loadingMore) return;
+    setLoadingMore(true);
+    try {
+      const res = await api.get<ApiResponse<{ members: Member[]; nextCursor: string | null }>>(
+        `/api/workspaces/${activeWorkspace.id}/members?cursor=${nextCursor}`,
+      );
+      if (res.data) {
+        setMembers((prev) => [...prev, ...res.data!.members]);
+        setNextCursor(res.data.nextCursor);
+      }
+    } catch {
+      // ignore
+    } finally {
+      setLoadingMore(false);
+    }
+  };
 
   useEffect(() => { fetchAll(); }, [fetchAll]);
 
