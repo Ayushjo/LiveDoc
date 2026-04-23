@@ -538,14 +538,24 @@ export const syncService = {
   },
 
   /**
-   * The core sync logic — called by sync.worker.ts.
-   * Runs the full fetch → delta-detect → chunk → enqueue-embed pipeline.
+   * The core sync logic — dispatches to the correct provider based on source type.
+   * Runs the full fetch → delta-detect → chunk → embed pipeline.
    */
   async runSync(
     sourceId: string,
     workspaceId: string,
     syncJobId: string,
   ): Promise<void> {
+    // Fetch source type for dispatch
+    const sourceRecord = await db.source.findUnique({
+      where: { id: sourceId },
+      select: { type: true },
+    });
+
+    if (!sourceRecord) {
+      throw new Error(`Source ${sourceId} not found`);
+    }
+
     // Mark job + source as running
     await Promise.all([
       db.syncJob.update({
@@ -559,34 +569,16 @@ export const syncService = {
     ]);
 
     try {
-      const accessToken = await sourceService.getDecryptedAccessToken(sourceId);
-      const pages = await notionService.listAllPages(accessToken);
-
-      let documentsProcessed = 0;
-
-      for (const page of pages) {
-        try {
-          await processPage(accessToken, sourceId, workspaceId, page, syncJobId);
-        } catch (pageErr) {
-          // One failed page must not abort the whole sync — log and continue
-          console.error(
-            `[SyncService] failed to process page ${page.id} (${page.title}):`,
-            pageErr,
-          );
-        }
-
-        documentsProcessed++;
-
-        // Persist progress after each page so the UI stays responsive
-        await db.syncJob.update({
-          where: { id: syncJobId },
-          data: { documentsProcessed },
-        });
+      // ── Dispatch to provider-specific sync ───────────────────────────────
+      if (sourceRecord.type === 'NOTION') {
+        await runNotionSync(sourceId, workspaceId, syncJobId);
+      } else if (sourceRecord.type === 'GITHUB') {
+        await runGitHubSync(sourceId, workspaceId, syncJobId);
+      } else {
+        throw new Error(`Unsupported source type: ${sourceRecord.type}`);
       }
 
-      // ── Backfill any chunks that are still missing embeddings ─────────────
-      // This covers chunks created by a previous sync that ran before the
-      // embed worker was started — re-syncing will embed them now.
+      // ── Backfill any chunks still missing embeddings ──────────────────────
       const unembedded = await db.$queryRaw<{ id: string }[]>`
         SELECT id FROM "Chunk"
         WHERE  "workspaceId" = ${workspaceId}
@@ -599,16 +591,23 @@ export const syncService = {
       }
 
       // ── Mark completed ────────────────────────────────────────────────────
+      const finalJob = await db.syncJob.findUnique({
+        where: { id: syncJobId },
+        select: { documentsProcessed: true },
+      });
+
       await Promise.all([
         db.syncJob.update({
           where: { id: syncJobId },
-          data: { status: 'COMPLETED', completedAt: new Date(), documentsProcessed },
+          data: { status: 'COMPLETED', completedAt: new Date() },
         }),
         db.source.update({
           where: { id: sourceId },
           data: { syncStatus: 'IDLE', lastSyncedAt: new Date() },
         }),
       ]);
+
+      console.log(`[SyncService] sync completed for ${sourceId} — ${finalJob?.documentsProcessed ?? 0} documents processed`);
     } catch (err) {
       const errorMessage =
         err instanceof Error ? err.message : 'Unknown error during sync';
@@ -624,7 +623,7 @@ export const syncService = {
         }),
       ]);
 
-      throw err; // Re-throw so BullMQ marks the job as failed and applies retry backoff
+      throw err;
     }
   },
 
