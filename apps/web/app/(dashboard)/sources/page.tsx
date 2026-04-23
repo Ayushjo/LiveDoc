@@ -36,8 +36,12 @@ export default function SourcesPage() {
 
     if (connected === 'notion') {
       setBanner({ type: 'success', message: 'Notion workspace connected successfully.' });
-      // Clean up the URL
       window.history.replaceState(null, '', '/sources');
+      fetchSources();
+    } else if (connected === 'github') {
+      setBanner({ type: 'success', message: 'GitHub account connected successfully.' });
+      window.history.replaceState(null, '', '/sources');
+      fetchSources();
     } else if (error) {
       setBanner({ type: 'error', message: decodeURIComponent(error) });
       window.history.replaceState(null, '', '/sources');
