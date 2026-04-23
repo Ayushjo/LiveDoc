@@ -3,6 +3,7 @@ import { db } from '../db';
 import { redis } from '../redis';
 import { encrypt, decrypt } from '../lib/crypto';
 import { notionService } from './notion.service';
+import { githubService } from './github.service';
 import {
   BadRequestError,
   ConflictError,
@@ -12,11 +13,14 @@ import {
 
 // ─── Redis key helpers ────────────────────────────────────────────────────────
 
-const OAUTH_STATE_PREFIX = 'notion:oauth:state:';
 const OAUTH_STATE_TTL_SEC = 600; // 10 minutes
 
-function stateKey(nonce: string): string {
-  return `${OAUTH_STATE_PREFIX}${nonce}`;
+function notionStateKey(nonce: string): string {
+  return `notion:oauth:state:${nonce}`;
+}
+
+function githubStateKey(nonce: string): string {
+  return `github:oauth:state:${nonce}`;
 }
 
 interface OAuthStatePayload {
