@@ -626,7 +626,7 @@ export default function SettingsPage() {
   }, []);
 
   return (
-    <div className="space-y-6 animate-fade-in-up" style={{ opacity: 0 }}>
+    <div className="space-y-6 animate-fade-in-up">
       {/* Header */}
       <div>
         <h1 className="text-3xl font-bold tracking-tight">Settings</h1>
