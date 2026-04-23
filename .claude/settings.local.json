@@ -2,7 +2,27 @@
   "permissions": {
     "allow": [
       "Bash(git init:*)",
-      "Bash(git remote:*)"
+      "Bash(git remote:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)"
+    ]
+  },
+  "attribution": {
+    "commit": "",
+    "pr": ""
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node -e \"const d=JSON.parse(require('fs').readFileSync(0,'utf8'));const f=(d.tool_input&&d.tool_input.file_path)?require('path').basename(d.tool_input.file_path):'files';const {execSync}=require('child_process');try{execSync('git add .',{cwd:'C:/LiveDoc'});execSync('git commit -m \\\"update: '+f+'\\\"',{cwd:'C:/LiveDoc'})}catch(e){}\"",
+            "timeout": 30
+          }
+        ]
+      }
     ]
   }
 }
