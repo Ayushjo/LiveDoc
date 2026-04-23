@@ -229,7 +229,7 @@ async function processGitHubFile(
   repoUpdatedAt: Date,
   syncJobId: string,
 ): Promise<PageSyncResult> {
-  const externalId = summary.id;
+  const externalId = `${summary.owner}/${summary.repo}/${summary.path}`;
 
   const existingDoc = await db.document.findUnique({
     where: { sourceId_externalId: { sourceId, externalId } },
