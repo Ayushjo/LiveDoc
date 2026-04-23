@@ -222,8 +222,9 @@ workspaceRouter.get(
 // ─── Member sub-routes ────────────────────────────────────────────────────────
 
 /**
- * GET /api/workspaces/:workspaceId/members
- * List all members. Any workspace member can view.
+ * GET /api/workspaces/:workspaceId/members?cursor=<id>&take=<n>
+ * List members with cursor pagination. Any workspace member can view.
+ * Returns { members, nextCursor } — nextCursor is null on the last page.
  */
 workspaceRouter.get(
   '/:workspaceId/members',
@@ -231,8 +232,14 @@ workspaceRouter.get(
   requireWorkspaceMember,
   async (req, res, next) => {
     try {
-      const members = await workspaceService.listMembers(req.params.workspaceId);
-      res.json({ data: members, error: null });
+      const cursor = typeof req.query.cursor === 'string' ? req.query.cursor : undefined;
+      const take = req.query.take ? parseInt(req.query.take as string, 10) : 20;
+
+      const result = await workspaceService.listMembers(req.params.workspaceId, {
+        cursor,
+        take: isNaN(take) ? 20 : take,
+      });
+      res.json({ data: result, error: null });
     } catch (err) {
       next(err);
     }
