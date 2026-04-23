@@ -51,8 +51,19 @@ export interface Source {
   metadata: Record<string, unknown>;
   lastSyncedAt: Date | null;
   syncStatus: SyncStatus;
+  syncInterval: SyncInterval;
   createdAt: Date;
   updatedAt: Date;
+}
+
+export interface QueryHistory {
+  id: string;
+  workspaceId: string;
+  userId: string;
+  question: string;
+  answer: string;
+  sources: Citation[];
+  createdAt: Date;
 }
 
 export interface Document {
