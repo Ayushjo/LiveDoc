@@ -123,6 +123,21 @@ export default function SourcesPage() {
     }
   }, [fetchSources]);
 
+  // ── Update auto-sync schedule ──────────────────────────────────────────────
+  const handleScheduleChange = useCallback(async (sourceId: string, interval: SyncInterval) => {
+    try {
+      await api.patch(`/api/sources/${sourceId}/schedule`, { interval });
+      setSources((prev) =>
+        prev.map((s) => (s.id === sourceId ? { ...s, syncInterval: interval } : s)),
+      );
+    } catch (err) {
+      setBanner({
+        type: 'error',
+        message: err instanceof Error ? err.message : 'Failed to update schedule.',
+      });
+    }
+  }, []);
+
   // ── Disconnect source ─────────────────────────────────────────────────────
   const handleDelete = useCallback(async (sourceId: string) => {
     if (!confirm('Disconnect this source? All synced documents and embeddings will be permanently deleted.')) return;
