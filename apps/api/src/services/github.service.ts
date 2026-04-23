@@ -185,20 +185,20 @@ async function paginateAll<T>(
   let page = 0;
 
   while (url && page < maxPages) {
-    const res = await fetch(url, { headers: githubHeaders(accessToken) });
+    const response = await fetch(url, { headers: githubHeaders(accessToken) });
 
-    if (!res.ok) {
-      const body = await res.json().catch(() => ({})) as { message?: string };
-      throw new Error(`GitHub API error ${res.status}: ${body.message ?? res.statusText}`);
+    if (!response.ok) {
+      const body = await response.json().catch(() => ({})) as { message?: string };
+      throw new Error(`GitHub API error ${response.status}: ${body.message ?? response.statusText}`);
     }
 
-    const data = await res.json() as T[];
+    const data = await response.json() as T[];
     results.push(...data);
     page++;
 
     // Parse Link header for next page
-    const linkHeader = res.headers.get('Link') ?? '';
-    const nextMatch = linkHeader.match(/<([^>]+)>;\s*rel="next"/);
+    const linkHeader: string = response.headers.get('Link') ?? '';
+    const nextMatch: RegExpMatchArray | null = linkHeader.match(/<([^>]+)>;\s*rel="next"/);
     url = nextMatch ? nextMatch[1] : null;
   }
 
