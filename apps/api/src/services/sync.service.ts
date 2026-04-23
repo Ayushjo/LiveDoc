@@ -176,6 +176,42 @@ async function processPage(
   return { skipped: false, chunksCreated: created.length };
 }
 
+// ─── Notion sync helper ───────────────────────────────────────────────────────
+
+/**
+ * Full Notion sync: fetches all pages accessible to the integration and
+ * runs two-level delta detection (lastEditedAt → contentHash) for each.
+ */
+async function runNotionSync(
+  sourceId: string,
+  workspaceId: string,
+  syncJobId: string,
+): Promise<void> {
+  const accessToken = await sourceService.getDecryptedAccessToken(sourceId);
+  const pages = await notionService.listAllPages(accessToken);
+
+  console.log(`[SyncService:Notion] found ${pages.length} pages to sync`);
+
+  let documentsProcessed = 0;
+
+  for (const page of pages) {
+    try {
+      await processPage(accessToken, sourceId, workspaceId, page, syncJobId);
+    } catch (pageErr) {
+      console.error(
+        `[SyncService:Notion] failed to process page ${page.id} (${page.title}):`,
+        pageErr,
+      );
+    }
+
+    documentsProcessed++;
+    await db.syncJob.update({
+      where: { id: syncJobId },
+      data: { documentsProcessed },
+    });
+  }
+}
+
 // ─── GitHub sync helpers ──────────────────────────────────────────────────────
 
 /**
