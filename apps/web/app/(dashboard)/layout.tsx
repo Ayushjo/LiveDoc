@@ -4,7 +4,7 @@ import { useSession, signOut } from '@/lib/auth-client';
 import { useRouter, usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { LayoutDashboard, Database, MessageSquareText, LogOut, Star, ChevronsUpDown, Loader2, Settings } from 'lucide-react';
+import { LayoutDashboard, Database, MessageSquareText, LogOut, Star, ChevronsUpDown, Loader2, Settings, Sun, Moon } from 'lucide-react';
 import { WorkspaceProvider, useWorkspace } from '@/lib/workspace-context';
 
 // ─── Create-workspace gate ─────────────────────────────────────────────────────
