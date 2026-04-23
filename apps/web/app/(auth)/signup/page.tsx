@@ -70,6 +70,37 @@ function SignupForm() {
     }
   };
 
+  // ── Email verification sent screen ──────────────────────────────────────────
+  if (emailSent) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background px-4">
+        <div className="w-full max-w-sm">
+          <div className="flex items-center gap-2 justify-center mb-8">
+            <Star className="w-6 h-6 fill-foreground text-foreground" />
+            <span className="font-semibold text-xl tracking-tight">LiveDoc</span>
+          </div>
+          <div className="bg-card border border-border rounded-xl p-8 shadow-sm text-center space-y-4">
+            <div className="flex items-center justify-center w-14 h-14 rounded-full bg-primary/10 mx-auto">
+              <MailCheck className="w-7 h-7 text-primary" />
+            </div>
+            <h1 className="text-xl font-bold tracking-tight">Check your email</h1>
+            <p className="text-sm text-muted-foreground">
+              We&apos;ve sent a verification link to{' '}
+              <span className="font-medium text-foreground">{email}</span>.
+              Click the link to activate your account.
+            </p>
+            <p className="text-xs text-muted-foreground pt-2">
+              Already verified?{' '}
+              <Link href={invite ? `/login?invite=${invite}` : '/login'} className="font-medium text-foreground hover:underline">
+                Sign in
+              </Link>
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-background px-4">
       <div className="w-full max-w-sm">
