@@ -180,30 +180,37 @@ export default function SourcesPage() {
           {/* Notion */}
           <button
             onClick={handleConnectNotion}
-            disabled={isConnecting || !activeWorkspace}
+            disabled={isConnecting !== null || !activeWorkspace}
             className="flex flex-col items-center justify-center p-6 border border-border rounded-xl bg-card hover:bg-muted/50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed group"
           >
             <div className="w-12 h-12 bg-primary/10 group-hover:bg-primary/20 rounded-full flex items-center justify-center mb-3 transition-colors">
-              {isConnecting ? (
+              {isConnecting === 'notion' ? (
                 <Loader2 className="w-6 h-6 text-primary animate-spin" />
               ) : (
                 <Database className="w-6 h-6 text-primary" />
               )}
             </div>
             <span className="font-medium text-sm">
-              {isConnecting ? 'Redirecting…' : 'Connect Notion'}
+              {isConnecting === 'notion' ? 'Redirecting…' : 'Connect Notion'}
             </span>
           </button>
 
-          {/* Placeholder: GitHub */}
+          {/* GitHub */}
           <button
-            disabled
-            className="flex flex-col items-center justify-center p-6 border border-dashed border-border rounded-xl opacity-40 cursor-not-allowed"
+            onClick={handleConnectGitHub}
+            disabled={isConnecting !== null || !activeWorkspace}
+            className="flex flex-col items-center justify-center p-6 border border-border rounded-xl bg-card hover:bg-muted/50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed group"
           >
-            <div className="w-12 h-12 bg-muted rounded-full flex items-center justify-center mb-3">
-              <Plus className="w-6 h-6 text-muted-foreground" />
+            <div className="w-12 h-12 bg-primary/10 group-hover:bg-primary/20 rounded-full flex items-center justify-center mb-3 transition-colors">
+              {isConnecting === 'github' ? (
+                <Loader2 className="w-6 h-6 text-primary animate-spin" />
+              ) : (
+                <Github className="w-6 h-6 text-primary" />
+              )}
             </div>
-            <span className="font-medium text-sm">GitHub (Soon)</span>
+            <span className="font-medium text-sm">
+              {isConnecting === 'github' ? 'Redirecting…' : 'Connect GitHub'}
+            </span>
           </button>
 
           {/* Placeholder: Google Drive */}
@@ -215,6 +222,17 @@ export default function SourcesPage() {
               <Plus className="w-6 h-6 text-muted-foreground" />
             </div>
             <span className="font-medium text-sm">Google Drive (Soon)</span>
+          </button>
+
+          {/* Placeholder: Linear */}
+          <button
+            disabled
+            className="flex flex-col items-center justify-center p-6 border border-dashed border-border rounded-xl opacity-40 cursor-not-allowed"
+          >
+            <div className="w-12 h-12 bg-muted rounded-full flex items-center justify-center mb-3">
+              <Plus className="w-6 h-6 text-muted-foreground" />
+            </div>
+            <span className="font-medium text-sm">Linear (Soon)</span>
           </button>
         </div>
       </div>
