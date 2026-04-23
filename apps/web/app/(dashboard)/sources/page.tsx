@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { SourceCard } from '@/components/source-card';
-import { Database, Plus, CheckCircle2, AlertCircle, Loader2 } from 'lucide-react';
+import { Database, Github, Plus, CheckCircle2, AlertCircle, Loader2 } from 'lucide-react';
 import type { Source } from '@livedoc/types';
 import type { ApiResponse } from '@livedoc/types';
 import { api } from '@/lib/api';
