@@ -144,8 +144,8 @@ function HistoryPanel({ items, isLoading, hasMore, onLoadMore, onClose, onSelect
                                 key={src.chunkId}
                                 className="inline-flex items-center text-[10px] px-2 py-0.5 bg-background border border-border rounded-full text-muted-foreground"
                               >
-                                [{i + 1}] {src.title ? src.title.slice(0, 18) : 'Source'}
-                                {src.title && src.title.length > 18 ? '…' : ''}
+                                [{i + 1}] {src.documentTitle ? src.documentTitle.slice(0, 18) : 'Source'}
+                                {src.documentTitle && src.documentTitle.length > 18 ? '…' : ''}
                               </span>
                             ))}
                             {item.sources.length > 3 && (
