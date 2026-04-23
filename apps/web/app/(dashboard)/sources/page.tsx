@@ -140,7 +140,7 @@ export default function SourcesPage() {
 
   // ── Render ─────────────────────────────────────────────────────────────────
   return (
-    <div className="space-y-8 animate-fade-in-up" style={{ opacity: 0 }}>
+    <div className="space-y-8 animate-fade-in-up">
       {/* Page header */}
       <div>
         <h1 className="text-3xl font-bold tracking-tight">Data Sources</h1>
