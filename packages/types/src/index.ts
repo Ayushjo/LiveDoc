@@ -6,6 +6,8 @@ export type SourceType = 'NOTION' | 'GITHUB' | 'LINEAR' | 'GOOGLE_DRIVE';
 
 export type SyncStatus = 'IDLE' | 'SYNCING' | 'ERROR';
 
+export type SyncInterval = 'MANUAL' | 'HOURLY' | 'EVERY_6H' | 'DAILY' | 'WEEKLY';
+
 export type SyncJobStatus = 'PENDING' | 'RUNNING' | 'COMPLETED' | 'FAILED';
 
 export type TriggerType = 'MANUAL' | 'WEBHOOK' | 'SCHEDULED';
