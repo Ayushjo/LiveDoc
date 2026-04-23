@@ -167,6 +167,14 @@ enum SyncStatus {
   ERROR
 }
 
+enum SyncInterval {
+  MANUAL
+  HOURLY
+  EVERY_6H
+  DAILY
+  WEEKLY
+}
+
 model Document {
   id          String   @id @default(cuid())
   sourceId    String
