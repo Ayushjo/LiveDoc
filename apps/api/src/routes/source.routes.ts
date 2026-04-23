@@ -86,6 +86,81 @@ sourceRouter.get('/notion/callback', async (req, res, next) => {
   }
 });
 
+// ─── GitHub OAuth ────────────────────────────────────────────────────────────
+
+/**
+ * GET /api/sources/github/connect?workspaceId=<id>
+ *
+ * Initiates the GitHub OAuth flow. Redirects the browser to GitHub's
+ * authorization page. Must be visited directly (not via fetch).
+ *
+ * Auth: session cookie required.
+ */
+sourceRouter.get(
+  '/github/connect',
+  requireAuth,
+  async (req, res, next) => {
+    try {
+      const schema = z.object({
+        workspaceId: z.string().min(1, 'workspaceId is required'),
+      });
+      const parsed = schema.safeParse(req.query);
+      if (!parsed.success) {
+        throw new ValidationError(parsed.error.errors[0]?.message ?? 'Invalid query');
+      }
+
+      const authUrl = await sourceService.initiateGitHubOAuth(
+        parsed.data.workspaceId,
+        res.locals.user.id,
+      );
+
+      res.redirect(authUrl);
+    } catch (err) {
+      next(err);
+    }
+  },
+);
+
+/**
+ * GET /api/sources/github/callback?code=<code>&state=<nonce>
+ *
+ * GitHub redirects here after the user authorizes (or denies) the integration.
+ * On success: creates the Source record and redirects to the frontend sources page.
+ * On failure: redirects to the frontend with an error query param.
+ *
+ * No auth middleware — the state nonce acts as the CSRF guard.
+ */
+sourceRouter.get('/github/callback', async (req, res) => {
+  const frontendSourcesUrl = `${process.env.FRONTEND_URL ?? 'http://localhost:3000'}/sources`;
+
+  try {
+    if (req.query.error) {
+      const reason = String(req.query.error);
+      return res.redirect(`${frontendSourcesUrl}?error=${encodeURIComponent(reason)}`);
+    }
+
+    const schema = z.object({
+      code: z.string().min(1),
+      state: z.string().min(1),
+    });
+
+    const parsed = schema.safeParse(req.query);
+    if (!parsed.success) {
+      return res.redirect(
+        `${frontendSourcesUrl}?error=${encodeURIComponent('Missing code or state parameter')}`,
+      );
+    }
+
+    await sourceService.handleGitHubCallback(parsed.data.code, parsed.data.state);
+
+    res.redirect(`${frontendSourcesUrl}?connected=github`);
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'Connection failed';
+    console.error('[GitHub callback error]', err);
+    res.redirect(`${frontendSourcesUrl}?error=${encodeURIComponent(message)}`);
+  }
+});
+
 // ─── Source CRUD ──────────────────────────────────────────────────────────────
 
 /**
