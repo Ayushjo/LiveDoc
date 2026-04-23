@@ -176,6 +176,306 @@ async function processPage(
   return { skipped: false, chunksCreated: created.length };
 }
 
+// ─── GitHub sync helpers ──────────────────────────────────────────────────────
+
+/**
+ * Processes a single GitHub file (Markdown/MDX) against the local database.
+ *
+ * Delta strategy:
+ *  1. Compare git blob SHA (stored as contentHash) — if unchanged, skip.
+ *  2. If changed, fetch + parse + re-chunk + re-embed.
+ */
+async function processGitHubFile(
+  accessToken: string,
+  sourceId: string,
+  workspaceId: string,
+  summary: import('./github.service').GitHubFileSummary,
+  repoUpdatedAt: Date,
+  syncJobId: string,
+): Promise<PageSyncResult> {
+  const externalId = summary.id;
+
+  const existingDoc = await db.document.findUnique({
+    where: { sourceId_externalId: { sourceId, externalId } },
+    select: { id: true, contentHash: true },
+  });
+
+  // The git blob SHA acts as contentHash — only fetch if SHA changed
+  if (existingDoc && existingDoc.contentHash === summary.sha) {
+    return { skipped: true, chunksCreated: 0 };
+  }
+
+  // Fetch + parse the file
+  const fileDoc = await githubService.getFileDocument(accessToken, summary);
+
+  // Check full content hash in case blob SHA collided (extremely rare but safe)
+  if (existingDoc && existingDoc.contentHash === fileDoc.contentHash) {
+    await db.document.update({
+      where: { id: existingDoc.id },
+      data: { lastEditedAt: repoUpdatedAt },
+    });
+    return { skipped: true, chunksCreated: 0 };
+  }
+
+  const rawChunks = chunkerService.chunk(fileDoc.blocks);
+
+  if (existingDoc) {
+    await db.chunk.deleteMany({ where: { documentId: existingDoc.id } });
+    await db.document.update({
+      where: { id: existingDoc.id },
+      data: {
+        title: fileDoc.title,
+        url: fileDoc.url,
+        contentHash: fileDoc.contentHash,
+        lastEditedAt: repoUpdatedAt,
+      },
+    });
+
+    if (rawChunks.length === 0) return { skipped: false, chunksCreated: 0 };
+
+    const created = await db.$transaction(
+      rawChunks.map((rc, idx) =>
+        db.chunk.create({
+          data: {
+            documentId: existingDoc.id,
+            workspaceId,
+            content: rc.content,
+            chunkIndex: idx,
+            tokenCount: rc.tokenCount,
+            metadata: rc.metadata,
+          },
+          select: { id: true },
+        }),
+      ),
+    );
+    await embedInline(created.map((c) => c.id));
+    await db.syncJob.update({
+      where: { id: syncJobId },
+      data: { chunksCreated: { increment: created.length } },
+    });
+    return { skipped: false, chunksCreated: created.length };
+  }
+
+  const newDoc = await db.document.create({
+    data: {
+      sourceId,
+      workspaceId,
+      externalId,
+      title: fileDoc.title,
+      url: fileDoc.url,
+      contentHash: fileDoc.contentHash,
+      lastEditedAt: repoUpdatedAt,
+      metadata: { owner: summary.owner, repo: summary.repo, path: summary.path, type: 'file' },
+    },
+    select: { id: true },
+  });
+
+  if (rawChunks.length === 0) return { skipped: false, chunksCreated: 0 };
+
+  const created = await db.$transaction(
+    rawChunks.map((rc, idx) =>
+      db.chunk.create({
+        data: {
+          documentId: newDoc.id,
+          workspaceId,
+          content: rc.content,
+          chunkIndex: idx,
+          tokenCount: rc.tokenCount,
+          metadata: rc.metadata,
+        },
+        select: { id: true },
+      }),
+    ),
+  );
+  await embedInline(created.map((c) => c.id));
+  await db.syncJob.update({
+    where: { id: syncJobId },
+    data: { chunksCreated: { increment: created.length } },
+  });
+  return { skipped: false, chunksCreated: created.length };
+}
+
+/**
+ * Processes a single GitHub issue (including comments) against the local DB.
+ */
+async function processGitHubIssue(
+  accessToken: string,
+  sourceId: string,
+  workspaceId: string,
+  summary: import('./github.service').GitHubIssueSummary,
+  syncJobId: string,
+): Promise<PageSyncResult> {
+  const externalId = summary.id;
+
+  const existingDoc = await db.document.findUnique({
+    where: { sourceId_externalId: { sourceId, externalId } },
+    select: { id: true, lastEditedAt: true, contentHash: true },
+  });
+
+  // Level 1: updatedAt timestamp
+  if (existingDoc && existingDoc.lastEditedAt.getTime() === summary.updatedAt.getTime()) {
+    return { skipped: true, chunksCreated: 0 };
+  }
+
+  const issueDoc = await githubService.getIssueDocument(accessToken, summary);
+
+  // Level 2: full content hash
+  if (existingDoc && existingDoc.contentHash === issueDoc.contentHash) {
+    await db.document.update({
+      where: { id: existingDoc.id },
+      data: { lastEditedAt: issueDoc.lastEditedAt },
+    });
+    return { skipped: true, chunksCreated: 0 };
+  }
+
+  const rawChunks = chunkerService.chunk(issueDoc.blocks);
+
+  if (existingDoc) {
+    await db.chunk.deleteMany({ where: { documentId: existingDoc.id } });
+    await db.document.update({
+      where: { id: existingDoc.id },
+      data: {
+        title: issueDoc.title,
+        url: issueDoc.url,
+        contentHash: issueDoc.contentHash,
+        lastEditedAt: issueDoc.lastEditedAt,
+      },
+    });
+
+    if (rawChunks.length === 0) return { skipped: false, chunksCreated: 0 };
+
+    const created = await db.$transaction(
+      rawChunks.map((rc, idx) =>
+        db.chunk.create({
+          data: {
+            documentId: existingDoc.id,
+            workspaceId,
+            content: rc.content,
+            chunkIndex: idx,
+            tokenCount: rc.tokenCount,
+            metadata: rc.metadata,
+          },
+          select: { id: true },
+        }),
+      ),
+    );
+    await embedInline(created.map((c) => c.id));
+    await db.syncJob.update({
+      where: { id: syncJobId },
+      data: { chunksCreated: { increment: created.length } },
+    });
+    return { skipped: false, chunksCreated: created.length };
+  }
+
+  const newDoc = await db.document.create({
+    data: {
+      sourceId,
+      workspaceId,
+      externalId,
+      title: issueDoc.title,
+      url: issueDoc.url,
+      contentHash: issueDoc.contentHash,
+      lastEditedAt: issueDoc.lastEditedAt,
+      metadata: { owner: summary.owner, repo: summary.repo, issueNumber: summary.number, type: 'issue' },
+    },
+    select: { id: true },
+  });
+
+  if (rawChunks.length === 0) return { skipped: false, chunksCreated: 0 };
+
+  const created = await db.$transaction(
+    rawChunks.map((rc, idx) =>
+      db.chunk.create({
+        data: {
+          documentId: newDoc.id,
+          workspaceId,
+          content: rc.content,
+          chunkIndex: idx,
+          tokenCount: rc.tokenCount,
+          metadata: rc.metadata,
+        },
+        select: { id: true },
+      }),
+    ),
+  );
+  await embedInline(created.map((c) => c.id));
+  await db.syncJob.update({
+    where: { id: syncJobId },
+    data: { chunksCreated: { increment: created.length } },
+  });
+  return { skipped: false, chunksCreated: created.length };
+}
+
+/**
+ * Full GitHub sync: iterates all repos → markdown files + open issues.
+ */
+async function runGitHubSync(
+  sourceId: string,
+  workspaceId: string,
+  syncJobId: string,
+): Promise<void> {
+  const accessToken = await sourceService.getDecryptedAccessToken(sourceId);
+  const repos = await githubService.listRepositories(accessToken);
+
+  console.log(`[SyncService:GitHub] found ${repos.length} repos to sync`);
+
+  let documentsProcessed = 0;
+
+  for (const repo of repos) {
+    const owner = repo.owner.login;
+    const repoName = repo.name;
+    const repoUpdatedAt = new Date(repo.pushed_at || repo.updated_at);
+
+    try {
+      // Sync markdown files
+      const files = await githubService.listMarkdownFiles(
+        accessToken,
+        owner,
+        repoName,
+        repo.default_branch,
+      );
+
+      for (const file of files) {
+        try {
+          await processGitHubFile(
+            accessToken,
+            sourceId,
+            workspaceId,
+            file,
+            repoUpdatedAt,
+            syncJobId,
+          );
+          documentsProcessed++;
+          await db.syncJob.update({
+            where: { id: syncJobId },
+            data: { documentsProcessed },
+          });
+        } catch (fileErr) {
+          console.error(`[SyncService:GitHub] failed to process file ${file.path} in ${owner}/${repoName}:`, fileErr);
+        }
+      }
+
+      // Sync open issues
+      const issues = await githubService.listOpenIssues(accessToken, owner, repoName);
+
+      for (const issue of issues) {
+        try {
+          await processGitHubIssue(accessToken, sourceId, workspaceId, issue, syncJobId);
+          documentsProcessed++;
+          await db.syncJob.update({
+            where: { id: syncJobId },
+            data: { documentsProcessed },
+          });
+        } catch (issueErr) {
+          console.error(`[SyncService:GitHub] failed to process issue #${issue.number} in ${owner}/${repoName}:`, issueErr);
+        }
+      }
+    } catch (repoErr) {
+      console.error(`[SyncService:GitHub] failed to process repo ${owner}/${repoName}:`, repoErr);
+    }
+  }
+}
+
 // ─── Public service ───────────────────────────────────────────────────────────
 
 export const syncService = {
