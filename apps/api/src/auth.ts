@@ -23,12 +23,19 @@ export const auth = betterAuth({
 
   emailAndPassword: {
     enabled: true,
-    requireEmailVerification: false,
+    requireEmailVerification: true,
     sendResetPassword: async ({ user, url }) => {
       await sendPasswordResetEmail({
         to: user.email,
         name: user.name,
         resetUrl: url,
+      });
+    },
+    sendVerificationEmail: async ({ user, url }) => {
+      await sendVerificationEmail({
+        to: user.email,
+        name: user.name,
+        verifyUrl: url,
       });
     },
   },
