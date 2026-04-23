@@ -1,15 +1,28 @@
-import { RefreshCw, Database, AlertCircle, CheckCircle2, Trash2 } from 'lucide-react';
+import { RefreshCw, Database, Github, AlertCircle, CheckCircle2, Trash2, FileText } from 'lucide-react';
 import type { Source } from '@livedoc/types';
 
 interface SourceCardProps {
-  source: Source;
+  source: Source & { _count?: { documents: number } };
   onSync?: (sourceId: string) => void;
   onDelete?: (sourceId: string) => void;
+}
+
+function SourceIcon({ type }: { type: Source['type'] }) {
+  const cls = 'w-5 h-5 text-foreground';
+  switch (type) {
+    case 'GITHUB':
+      return <Github className={cls} />;
+    case 'NOTION':
+      return <Database className={cls} />;
+    default:
+      return <Database className={cls} />;
+  }
 }
 
 export function SourceCard({ source, onSync, onDelete }: SourceCardProps) {
   const isSyncing = source.syncStatus === 'SYNCING';
   const hasError = source.syncStatus === 'ERROR';
+  const docCount = (source as SourceCardProps['source'])._count?.documents;
 
   return (
     <div className="p-5 border border-border rounded-xl bg-card shadow-sm flex flex-col gap-4">
@@ -17,7 +30,7 @@ export function SourceCard({ source, onSync, onDelete }: SourceCardProps) {
       <div className="flex items-start justify-between">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded bg-muted flex items-center justify-center shrink-0">
-            <Database className="w-5 h-5 text-foreground" />
+            <SourceIcon type={source.type} />
           </div>
           <div>
             <h3 className="font-semibold text-foreground text-sm flex items-center gap-2">
@@ -26,6 +39,12 @@ export function SourceCard({ source, onSync, onDelete }: SourceCardProps) {
             </h3>
             <p className="text-xs text-muted-foreground capitalize mt-0.5">
               {source.type.toLowerCase().replace('_', ' ')}
+              {docCount !== undefined && (
+                <span className="ml-2 inline-flex items-center gap-1">
+                  <FileText className="w-3 h-3" />
+                  {docCount} {docCount === 1 ? 'doc' : 'docs'}
+                </span>
+              )}
             </p>
           </div>
         </div>
@@ -60,7 +79,9 @@ export function SourceCard({ source, onSync, onDelete }: SourceCardProps) {
             ) : (
               <>
                 <CheckCircle2 className="w-3.5 h-3.5 text-green-500" />
-                <span className="text-xs font-medium text-green-500">Idle (Synced)</span>
+                <span className="text-xs font-medium text-green-500">
+                  {source.lastSyncedAt ? 'Synced' : 'Ready'}
+                </span>
               </>
             )}
           </div>
