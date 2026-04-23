@@ -139,6 +139,7 @@ function DashboardLayoutInner({ children }: { children: React.ReactNode }) {
     { href: '/dashboard', label: 'Overview', icon: LayoutDashboard },
     { href: '/sources', label: 'Data Sources', icon: Database },
     { href: '/query', label: 'Query Room', icon: MessageSquareText },
+    { href: '/settings', label: 'Settings', icon: Settings },
   ];
 
   return (
