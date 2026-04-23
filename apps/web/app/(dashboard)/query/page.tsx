@@ -4,7 +4,7 @@ import { QueryInterface } from '@/components/query-interface';
 
 export default function QueryPage() {
   return (
-    <div className="h-full flex flex-col items-center animate-fade-in-up" style={{ opacity: 0 }}>
+    <div className="h-full flex flex-col items-center animate-fade-in-up">
       <div className="w-full max-w-3xl flex flex-col h-full">
         <div className="text-center mb-8 shrink-0">
           <h1 className="text-3xl font-bold tracking-tight">Query Room</h1>
