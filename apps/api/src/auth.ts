@@ -1,7 +1,7 @@
 import { betterAuth } from 'better-auth';
 import { prismaAdapter } from 'better-auth/adapters/prisma';
 import { db } from './db';
-import { sendPasswordResetEmail } from './lib/email';
+import { sendPasswordResetEmail, sendVerificationEmail } from './lib/email';
 
 if (!process.env.BETTER_AUTH_SECRET) {
   throw new Error('BETTER_AUTH_SECRET environment variable is not set');
