@@ -59,6 +59,7 @@ export default function SourcesPage() {
       const res = await api.get<ApiResponse<Source[]>>(
         `/api/sources?workspaceId=${activeWorkspace.id}`,
       );
+      if (res.error) throw new Error(res.error.message);
       if (res.data) setSources(res.data);
     } catch (err) {
       setBanner({
@@ -82,17 +83,29 @@ export default function SourcesPage() {
     window.location.href = `${API_URL}/api/sources/notion/connect?workspaceId=${activeWorkspace.id}`;
   };
 
-  // ── Trigger manual sync ────────────────────────────────────────────────────
+  // ── Trigger manual sync + poll until completed ─────────────────────────────
   const handleSync = useCallback(async (sourceId: string) => {
     try {
       await api.post(`/api/sync/${sourceId}`, {});
-      // Optimistically update the UI to show SYNCING state
       setSources((prev) =>
         prev.map((s) => (s.id === sourceId ? { ...s, syncStatus: 'SYNCING' } : s)),
       );
-      setBanner({ type: 'success', message: 'Sync queued. This may take a few minutes.' });
-      // Re-fetch after a short delay to pick up the real status
-      setTimeout(fetchSources, 3000);
+      setBanner({ type: 'success', message: 'Sync started — embedding may take 30–60 seconds.' });
+
+      // Poll every 4 s until the source is no longer SYNCING
+      let attempts = 0;
+      const poll = setInterval(async () => {
+        attempts++;
+        await fetchSources();
+        // Stop polling after source leaves SYNCING state or after 5 min (75 × 4s)
+        setSources((prev) => {
+          const src = prev.find((s) => s.id === sourceId);
+          if (!src || src.syncStatus !== 'SYNCING' || attempts >= 75) {
+            clearInterval(poll);
+          }
+          return prev;
+        });
+      }, 4000);
     } catch (err) {
       setBanner({
         type: 'error',

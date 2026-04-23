@@ -102,7 +102,7 @@ async function processPage(
       return { skipped: false, chunksCreated: 0 };
     }
 
-    // Create new chunks (without embeddings — embed worker fills those in)
+    // Create new chunks, then embed inline immediately
     const created = await db.$transaction(
       rawChunks.map((rc, idx) =>
         db.chunk.create({
@@ -165,7 +165,7 @@ async function processPage(
     ),
   );
 
-  await enqueueEmbedBatches(created.map((c) => c.id), workspaceId);
+  await embedInline(created.map((c) => c.id));
 
   await db.syncJob.update({
     where: { id: syncJobId },

@@ -114,12 +114,16 @@ export interface QueryRequest {
 }
 
 export interface Citation {
+  /** 1-based position in the context block list (used for [N] inline citations). */
+  index: number;
   chunkId: string;
   documentId: string;
   documentTitle: string;
+  /** May be empty string for sources without a direct URL. */
   documentUrl: string;
   content: string;
   headingPath: string[];
+  /** Cosine similarity score 0–1. Higher = more relevant. */
   similarity: number;
 }
 

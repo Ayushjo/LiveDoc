@@ -10,10 +10,10 @@ import { useWorkspace } from '@/lib/workspace-context';
 // ─── Types ─────────────────────────────────────────────────────────────────────
 
 type SSEEvent =
-  | { type: 'delta'; content: string }
+  | { type: 'delta';     content: string }
   | { type: 'citations'; citations: Citation[] }
   | { type: 'done' }
-  | { type: 'error'; message: string };
+  | { type: 'error';     message: string };
 
 type Message = {
   id: string;
