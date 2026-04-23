@@ -234,16 +234,25 @@ function DashboardLayoutInner({ children }: { children: React.ReactNode }) {
               <p className="text-xs text-muted-foreground truncate">{session.user.email}</p>
             </div>
           </Link>
-          <button
-            onClick={async () => {
-              await signOut();
-              router.push('/login');
-            }}
-            className="w-full flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium text-destructive hover:bg-destructive/10 transition-colors"
-          >
-            <LogOut className="w-4 h-4" />
-            Sign Out
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={toggleTheme}
+              className="flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+              title={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
+            >
+              {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+            </button>
+            <button
+              onClick={async () => {
+                await signOut();
+                router.push('/login');
+              }}
+              className="flex-1 flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium text-destructive hover:bg-destructive/10 transition-colors"
+            >
+              <LogOut className="w-4 h-4" />
+              Sign Out
+            </button>
+          </div>
         </div>
       </aside>
 
