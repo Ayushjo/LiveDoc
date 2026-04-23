@@ -588,6 +588,18 @@ function MembersTab({ onToast }: { onToast: (m: string, t: 'success' | 'error') 
                 </div>
               );
             })}
+          {nextCursor && (
+            <div className="pt-3 flex justify-center">
+              <button
+                onClick={handleLoadMore}
+                disabled={loadingMore}
+                className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-muted-foreground border border-border rounded-lg hover:bg-muted transition-colors disabled:opacity-50"
+              >
+                {loadingMore && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+                {loadingMore ? 'Loading…' : 'Load more members'}
+              </button>
+            </div>
+          )}
           </div>
         )}
       </SectionCard>
