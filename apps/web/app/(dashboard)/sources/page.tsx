@@ -46,7 +46,7 @@ export default function SourcesPage() {
       setBanner({ type: 'error', message: decodeURIComponent(error) });
       window.history.replaceState(null, '', '/sources');
     }
-  }, [searchParams]);
+  }, [searchParams, fetchSources]);
 
   // Auto-dismiss banner after 6 seconds
   useEffect(() => {
