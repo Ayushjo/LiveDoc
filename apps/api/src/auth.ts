@@ -1,6 +1,7 @@
 import { betterAuth } from 'better-auth';
 import { prismaAdapter } from 'better-auth/adapters/prisma';
 import { db } from './db';
+import { sendPasswordResetEmail } from './lib/email';
 
 if (!process.env.BETTER_AUTH_SECRET) {
   throw new Error('BETTER_AUTH_SECRET environment variable is not set');
@@ -22,11 +23,13 @@ export const auth = betterAuth({
 
   emailAndPassword: {
     enabled: true,
-    // Email verification is disabled for Phase 1 — enable in Phase 3
     requireEmailVerification: false,
     sendResetPassword: async ({ user, url }) => {
-      // TODO (Phase 3): send via Resend
-      console.log(`[Auth] password reset for ${user.email}: ${url}`);
+      await sendPasswordResetEmail({
+        to: user.email,
+        name: user.name,
+        resetUrl: url,
+      });
     },
   },
 
