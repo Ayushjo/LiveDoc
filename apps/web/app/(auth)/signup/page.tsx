@@ -1,11 +1,15 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, Suspense } from 'react';
 import { signUp, signIn } from '@/lib/auth-client';
+import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { Star, Loader2, Chrome } from 'lucide-react';
+import { Star, Loader2 } from 'lucide-react';
 
-export default function SignupPage() {
+function SignupForm() {
+  const searchParams = useSearchParams();
+  const invite = searchParams.get('invite'); // present when coming from /invite/[token]
+
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -13,12 +17,23 @@ export default function SignupPage() {
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
 
+  // After auth, go back to the invite page so it can accept automatically,
+  // or fall through to the dashboard if there's no pending invite.
+  const postAuthUrl = invite
+    ? `${typeof window !== 'undefined' ? window.location.origin : ''}/invite/${invite}`
+    : `${typeof window !== 'undefined' ? window.location.origin : ''}/dashboard`;
+
   // ── Google OAuth ────────────────────────────────────────────────────────────
   const handleGoogle = async () => {
     setGoogleLoading(true);
     setError('');
     try {
-      await signIn.social({ provider: 'google', callbackURL: `${window.location.origin}/dashboard` });
+      await signIn.social({
+        provider: 'google',
+        callbackURL: invite
+          ? `${window.location.origin}/invite/${invite}`
+          : `${window.location.origin}/dashboard`,
+      });
     } catch {
       setError('Google sign-in failed. Please try again.');
       setGoogleLoading(false);
@@ -36,7 +51,7 @@ export default function SignupPage() {
         name,
         email,
         password,
-        callbackURL: `${window.location.origin}/dashboard`,
+        callbackURL: postAuthUrl,
       });
 
       if (error) {
@@ -62,7 +77,7 @@ export default function SignupPage() {
           <div className="text-center">
             <h1 className="text-2xl font-bold tracking-tight">Create an account</h1>
             <p className="mt-1 text-sm text-muted-foreground">
-              Start syncing your knowledge base
+              {invite ? 'Create an account to accept your invitation' : 'Start syncing your knowledge base'}
             </p>
           </div>
 
@@ -80,11 +95,7 @@ export default function SignupPage() {
             disabled={googleLoading || loading}
             className="w-full flex items-center justify-center gap-3 py-2.5 px-4 border border-border rounded-lg text-sm font-medium bg-background hover:bg-muted transition-all disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {googleLoading ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
-            ) : (
-              <GoogleIcon />
-            )}
+            {googleLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <GoogleIcon />}
             Continue with Google
           </button>
 
@@ -155,7 +166,10 @@ export default function SignupPage() {
 
           <p className="text-center text-sm text-muted-foreground">
             Already have an account?{' '}
-            <Link href="/login" className="font-medium text-foreground hover:underline">
+            <Link
+              href={invite ? `/login?invite=${invite}` : '/login'}
+              className="font-medium text-foreground hover:underline"
+            >
               Sign in
             </Link>
           </p>
@@ -165,7 +179,14 @@ export default function SignupPage() {
   );
 }
 
-// Inline Google icon (avoids extra icon package dependency)
+export default function SignupPage() {
+  return (
+    <Suspense>
+      <SignupForm />
+    </Suspense>
+  );
+}
+
 function GoogleIcon() {
   return (
     <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden>
