@@ -1,14 +1,15 @@
 import { Worker } from 'bullmq';
 import { createRedisConnection } from '../redis';
 import { syncService } from '../services/sync.service';
+import { db } from '../db';
 import type { SyncJobData } from '@livedoc/types';
 
 /**
  * Sync worker — consumes jobs from the 'sync' queue.
  *
- * Each job runs the full Notion fetch → delta-detect → chunk → enqueue-embed
- * pipeline for one source. Per-page errors are caught inside syncService.runSync
- * so a single bad page never aborts the whole sync.
+ * Handles two cases:
+ *  - Manual/webhook: syncJobId is present (pre-created by triggerSync).
+ *  - Scheduled:      syncJobId is absent — worker creates the DB record first.
  *
  * Concurrency: 5 — allows syncing 5 sources simultaneously.
  * BullMQ retries up to 3× with exponential backoff on unhandled errors.
@@ -16,16 +17,38 @@ import type { SyncJobData } from '@livedoc/types';
 export const syncWorker = new Worker<SyncJobData>(
   'sync',
   async (job) => {
-    const { sourceId, workspaceId, syncJobId } = job.data;
+    const { sourceId, workspaceId, triggeredBy } = job.data;
+    let { syncJobId } = job.data;
 
     console.log(
-      `[SyncWorker] starting job=${job.id} source=${sourceId} syncJob=${syncJobId}`,
+      `[SyncWorker] starting job=${job.id} source=${sourceId} trigger=${triggeredBy}`,
     );
+
+    // Scheduled jobs don't carry a syncJobId — create the DB record now
+    if (!syncJobId) {
+      // Guard: skip if a sync is already running for this source
+      const source = await db.source.findUnique({
+        where: { id: sourceId },
+        select: { syncStatus: true },
+      });
+
+      if (source?.syncStatus === 'SYNCING') {
+        console.log(
+          `[SyncWorker] skipping scheduled job for ${sourceId} — already syncing`,
+        );
+        return;
+      }
+
+      const dbJob = await db.syncJob.create({
+        data: { sourceId, triggeredBy: 'SCHEDULED', status: 'PENDING' },
+      });
+      syncJobId = dbJob.id;
+    }
 
     await syncService.runSync(sourceId, workspaceId, syncJobId);
 
     console.log(
-      `[SyncWorker] completed job=${job.id} source=${sourceId} syncJob=${syncJobId}`,
+      `[SyncWorker] completed job=${job.id} source=${sourceId}`,
     );
   },
   {
