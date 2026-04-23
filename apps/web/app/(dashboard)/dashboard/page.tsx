@@ -130,7 +130,7 @@ export default function DashboardPage() {
     : [];
 
   return (
-    <div className="space-y-8 animate-fade-in-up" style={{ opacity: 0 }}>
+    <div className="space-y-8 animate-fade-in-up">
       {/* Header */}
       <div className="flex items-start justify-between">
         <div>
