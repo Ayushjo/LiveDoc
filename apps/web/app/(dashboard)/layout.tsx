@@ -205,15 +205,15 @@ function DashboardLayoutInner({ children }: { children: React.ReactNode }) {
 
         {/* User footer */}
         <div className="p-4 border-t border-border">
-          <div className="flex items-center gap-3 px-3 py-2 mb-2">
-            <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-sm">
+          <Link href="/settings" className="flex items-center gap-3 px-3 py-2 mb-2 rounded-md hover:bg-muted transition-colors group">
+            <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-sm group-hover:bg-primary/20 transition-colors">
               {session.user.name?.[0]?.toUpperCase() || 'U'}
             </div>
             <div className="flex-1 truncate">
               <p className="text-sm font-medium truncate">{session.user.name}</p>
               <p className="text-xs text-muted-foreground truncate">{session.user.email}</p>
             </div>
-          </div>
+          </Link>
           <button
             onClick={async () => {
               await signOut();
