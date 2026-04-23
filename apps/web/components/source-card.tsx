@@ -1,31 +1,40 @@
-import { RefreshCw, Database, Github, AlertCircle, CheckCircle2, Trash2, FileText } from 'lucide-react';
-import type { Source } from '@livedoc/types';
+'use client';
+
+import { RefreshCw, Database, Github, AlertCircle, CheckCircle2, Trash2, FileText, Clock, ChevronRight } from 'lucide-react';
+import Link from 'next/link';
+import type { Source, SyncInterval } from '@livedoc/types';
+
+const INTERVAL_LABELS: Record<SyncInterval, string> = {
+  MANUAL:   'Manual',
+  HOURLY:   'Hourly',
+  EVERY_6H: 'Every 6h',
+  DAILY:    'Daily',
+  WEEKLY:   'Weekly',
+};
 
 interface SourceCardProps {
   source: Source & { _count?: { documents: number } };
   onSync?: (sourceId: string) => void;
   onDelete?: (sourceId: string) => void;
+  onScheduleChange?: (sourceId: string, interval: SyncInterval) => void;
 }
 
 function SourceIcon({ type }: { type: Source['type'] }) {
   const cls = 'w-5 h-5 text-foreground';
   switch (type) {
-    case 'GITHUB':
-      return <Github className={cls} />;
-    case 'NOTION':
-      return <Database className={cls} />;
-    default:
-      return <Database className={cls} />;
+    case 'GITHUB':  return <Github className={cls} />;
+    case 'NOTION':  return <Database className={cls} />;
+    default:        return <Database className={cls} />;
   }
 }
 
-export function SourceCard({ source, onSync, onDelete }: SourceCardProps) {
+export function SourceCard({ source, onSync, onDelete, onScheduleChange }: SourceCardProps) {
   const isSyncing = source.syncStatus === 'SYNCING';
-  const hasError = source.syncStatus === 'ERROR';
-  const docCount = (source as SourceCardProps['source'])._count?.documents;
+  const hasError  = source.syncStatus === 'ERROR';
+  const docCount  = (source as SourceCardProps['source'])._count?.documents;
 
   return (
-    <div className="p-5 border border-border rounded-xl bg-card shadow-sm flex flex-col gap-4">
+    <div className="p-5 border border-border rounded-xl bg-card shadow-sm flex flex-col gap-4 hover:border-border/80 transition-colors">
       {/* Header */}
       <div className="flex items-start justify-between">
         <div className="flex items-center gap-3">
@@ -49,27 +58,58 @@ export function SourceCard({ source, onSync, onDelete }: SourceCardProps) {
           </div>
         </div>
 
-        {onDelete && (
-          <button
-            onClick={() => onDelete(source.id)}
-            title="Disconnect source"
-            className="p-2 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-md transition-colors"
+        <div className="flex items-center gap-1">
+          {/* View details */}
+          <Link
+            href={`/sources/${source.id}`}
+            className="p-2 text-muted-foreground hover:text-foreground hover:bg-muted rounded-md transition-colors"
+            title="View source details"
           >
-            <Trash2 className="w-4 h-4" />
-          </button>
-        )}
+            <ChevronRight className="w-4 h-4" />
+          </Link>
+
+          {onDelete && (
+            <button
+              onClick={() => onDelete(source.id)}
+              title="Disconnect source"
+              className="p-2 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-md transition-colors"
+            >
+              <Trash2 className="w-4 h-4" />
+            </button>
+          )}
+        </div>
       </div>
 
+      {/* Auto-sync schedule */}
+      {onScheduleChange && (
+        <div className="flex items-center gap-2">
+          <Clock className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+          <span className="text-xs text-muted-foreground">Auto-sync:</span>
+          <select
+            value={source.syncInterval}
+            onChange={(e) => onScheduleChange(source.id, e.target.value as SyncInterval)}
+            disabled={isSyncing}
+            className="text-xs font-medium bg-transparent border-none outline-none cursor-pointer text-foreground hover:text-primary transition-colors disabled:opacity-50"
+          >
+            {(Object.keys(INTERVAL_LABELS) as SyncInterval[]).map((key) => (
+              <option key={key} value={key}>
+                {INTERVAL_LABELS[key]}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
+
       {/* Footer */}
-      <div className="flex items-center justify-between pt-4 border-t border-border">
+      <div className="flex items-center justify-between pt-3 border-t border-border">
         {/* Status */}
         <div className="flex flex-col">
           <span className="text-xs text-muted-foreground mb-1">Status</span>
           <div className="flex items-center gap-1.5">
             {isSyncing ? (
               <>
-                <RefreshCw className="w-3.5 h-3.5 text-orange-500 animate-spin" />
-                <span className="text-xs font-medium text-orange-500">Syncing…</span>
+                <RefreshCw className="w-3.5 h-3.5 text-amber-500 animate-spin" />
+                <span className="text-xs font-medium text-amber-500">Syncing…</span>
               </>
             ) : hasError ? (
               <>
