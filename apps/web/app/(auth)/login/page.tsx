@@ -1,11 +1,15 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, Suspense } from 'react';
 import { signIn } from '@/lib/auth-client';
+import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { Star, Loader2 } from 'lucide-react';
 
-export default function LoginPage() {
+function LoginForm() {
+  const searchParams = useSearchParams();
+  const invite = searchParams.get('invite'); // present when coming from /invite/[token]
+
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -17,7 +21,12 @@ export default function LoginPage() {
     setGoogleLoading(true);
     setError('');
     try {
-      await signIn.social({ provider: 'google', callbackURL: `${window.location.origin}/dashboard` });
+      await signIn.social({
+        provider: 'google',
+        callbackURL: invite
+          ? `${window.location.origin}/invite/${invite}`
+          : `${window.location.origin}/dashboard`,
+      });
     } catch {
       setError('Google sign-in failed. Please try again.');
       setGoogleLoading(false);
@@ -34,7 +43,9 @@ export default function LoginPage() {
       const { error } = await signIn.email({
         email,
         password,
-        callbackURL: `${window.location.origin}/dashboard`,
+        callbackURL: invite
+          ? `${window.location.origin}/invite/${invite}`
+          : `${window.location.origin}/dashboard`,
       });
 
       if (error) {
@@ -60,7 +71,7 @@ export default function LoginPage() {
           <div className="text-center">
             <h1 className="text-2xl font-bold tracking-tight">Welcome back</h1>
             <p className="mt-1 text-sm text-muted-foreground">
-              Sign in to your LiveDoc account
+              {invite ? 'Sign in to accept your invitation' : 'Sign in to your LiveDoc account'}
             </p>
           </div>
 
@@ -78,11 +89,7 @@ export default function LoginPage() {
             disabled={googleLoading || loading}
             className="w-full flex items-center justify-center gap-3 py-2.5 px-4 border border-border rounded-lg text-sm font-medium bg-background hover:bg-muted transition-all disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {googleLoading ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
-            ) : (
-              <GoogleIcon />
-            )}
+            {googleLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <GoogleIcon />}
             Continue with Google
           </button>
 
@@ -115,7 +122,10 @@ export default function LoginPage() {
             <div>
               <div className="flex items-center justify-between mb-1.5">
                 <label className="block text-sm font-medium">Password</label>
-                <Link href="/forgot-password" className="text-xs text-muted-foreground hover:text-foreground transition-colors">
+                <Link
+                  href="/forgot-password"
+                  className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+                >
                   Forgot password?
                 </Link>
               </div>
@@ -143,13 +153,24 @@ export default function LoginPage() {
 
           <p className="text-center text-sm text-muted-foreground">
             Don&apos;t have an account?{' '}
-            <Link href="/signup" className="font-medium text-foreground hover:underline">
+            <Link
+              href={invite ? `/signup?invite=${invite}` : '/signup'}
+              className="font-medium text-foreground hover:underline"
+            >
               Sign up
             </Link>
           </p>
         </div>
       </div>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense>
+      <LoginForm />
+    </Suspense>
   );
 }
 
