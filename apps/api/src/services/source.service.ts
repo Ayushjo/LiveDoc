@@ -147,6 +147,115 @@ export const sourceService = {
     return source;
   },
 
+  // ── GitHub OAuth ────────────────────────────────────────────────────────────
+
+  /**
+   * Step 1 — Initiates the GitHub OAuth flow.
+   *
+   * Verifies ADMIN+ role, generates a random state nonce stored in Redis,
+   * and returns the GitHub authorization URL.
+   */
+  async initiateGitHubOAuth(
+    workspaceId: string,
+    userId: string,
+  ): Promise<string> {
+    const member = await db.workspaceMember.findUnique({
+      where: { workspaceId_userId: { workspaceId, userId } },
+      select: { role: true },
+    });
+
+    if (!member) throw new NotFoundError('Workspace');
+    if (member.role === 'MEMBER') {
+      throw new ForbiddenError('Only ADMINs and OWNERs can connect new sources');
+    }
+
+    const nonce = randomBytes(32).toString('hex');
+    const payload: OAuthStatePayload = { workspaceId, userId };
+    await redis.set(githubStateKey(nonce), JSON.stringify(payload), 'EX', OAUTH_STATE_TTL_SEC);
+
+    return githubService.buildOAuthUrl(nonce);
+  },
+
+  /**
+   * Step 2 — Handles the GitHub OAuth callback.
+   *
+   * Validates state nonce, exchanges code for token, stores encrypted token,
+   * fetches the authenticated GitHub user, creates a Source record.
+   */
+  async handleGitHubCallback(
+    code: string,
+    state: string,
+  ) {
+    // Validate state — one-time use CSRF guard
+    const raw = await redis.get(githubStateKey(state));
+    if (!raw) {
+      throw new BadRequestError(
+        'OAuth state expired or invalid. Please start the connection flow again.',
+      );
+    }
+
+    const { workspaceId, userId } = JSON.parse(raw) as OAuthStatePayload;
+    await redis.del(githubStateKey(state));
+
+    // Exchange authorization code for access token
+    const token = await githubService.exchangeOAuthCode(code);
+
+    // Fetch the user's GitHub profile for display name + duplicate check
+    const userInfo = await githubService.getAuthenticatedUser(token.accessToken);
+
+    // Prevent connecting the same GitHub account twice to the same workspace
+    const existingSource = await db.source.findFirst({
+      where: {
+        workspaceId,
+        type: 'GITHUB',
+        metadata: {
+          path: ['githubUserId'],
+          equals: userInfo.githubUserId,
+        },
+      },
+      select: { id: true },
+    });
+
+    if (existingSource) {
+      throw new ConflictError(
+        'This GitHub account is already connected to this workspace. Disconnect it first to reconnect.',
+      );
+    }
+
+    const encryptedAccessToken = encrypt(token.accessToken);
+
+    const source = await db.source.create({
+      data: {
+        workspaceId,
+        type: 'GITHUB',
+        name: `GitHub — ${userInfo.login}`,
+        encryptedAccessToken,
+        encryptedRefreshToken: null,
+        tokenExpiresAt: null,
+        syncStatus: 'IDLE',
+        metadata: {
+          githubUserId: userInfo.githubUserId,
+          githubLogin: userInfo.login,
+          githubName: userInfo.name,
+          connectedBy: userId,
+        },
+      },
+      select: {
+        id: true,
+        workspaceId: true,
+        type: true,
+        name: true,
+        syncStatus: true,
+        lastSyncedAt: true,
+        metadata: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    });
+
+    return source;
+  },
+
   // ── Source CRUD ─────────────────────────────────────────────────────────────
 
   /**
