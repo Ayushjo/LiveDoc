@@ -244,6 +244,21 @@ model SyncJob {
   @@index([status])
 }
 
+model QueryHistory {
+  id          String   @id @default(cuid())
+  workspaceId String
+  userId      String
+  question    String   @db.Text
+  answer      String   @db.Text
+  sources     Json     @default("[]") // serialised Citation[]
+  createdAt   DateTime @default(now())
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId, createdAt(sort: Desc)])
+  @@index([userId])
+}
+
 enum SyncJobStatus {
   PENDING
   RUNNING
