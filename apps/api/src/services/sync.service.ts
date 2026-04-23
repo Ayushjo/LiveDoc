@@ -1,5 +1,6 @@
 import { db } from '../db';
 import { notionService, type NotionPageSummary } from './notion.service';
+import { githubService } from './github.service';
 import { sourceService } from './source.service';
 import { chunkerService } from './chunker.service';
 import { embedService } from './embed.service';
