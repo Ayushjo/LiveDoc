@@ -58,6 +58,11 @@ function SignupForm() {
       if (error) {
         setError(error.message ?? 'Failed to create account.');
         setLoading(false);
+      } else {
+        // With email verification enabled, better-auth sends a verification email
+        // rather than logging in immediately — show the "check your email" screen.
+        setEmailSent(true);
+        setLoading(false);
       }
     } catch {
       setError('Cannot reach the server. Make sure the API is running on port 3001.');
