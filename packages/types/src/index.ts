@@ -150,7 +150,8 @@ export interface QueryResponse {
 export interface SyncJobData {
   sourceId: string;
   workspaceId: string;
-  syncJobId: string;
+  /** Present for manual/webhook syncs. Absent for scheduled — worker creates the record. */
+  syncJobId?: string;
   triggeredBy: TriggerType;
 }
 
