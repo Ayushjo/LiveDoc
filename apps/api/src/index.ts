@@ -63,6 +63,10 @@ app.use(errorHandler);
 // ── Start ─────────────────────────────────────────────────────────────────────
 app.listen(PORT, () => {
   console.log(`[API] LiveDoc running on http://localhost:${PORT}`);
+  // Restore all BullMQ repeatable sync jobs from DB (survives restarts)
+  schedulerService.rescheduleAll().catch((err) =>
+    console.error('[Scheduler] failed to restore schedules:', err),
+  );
 });
 
 export { app };
