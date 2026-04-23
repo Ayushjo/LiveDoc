@@ -29,25 +29,6 @@ export default function SourcesPage() {
   const [isConnecting, setIsConnecting] = useState<'notion' | 'github' | null>(null);
   const [banner, setBanner] = useState<BannerState>(null);
 
-  // ── Handle OAuth callback redirect params ──────────────────────────────────
-  useEffect(() => {
-    const connected = searchParams.get('connected');
-    const error = searchParams.get('error');
-
-    if (connected === 'notion') {
-      setBanner({ type: 'success', message: 'Notion workspace connected successfully.' });
-      window.history.replaceState(null, '', '/sources');
-      fetchSources();
-    } else if (connected === 'github') {
-      setBanner({ type: 'success', message: 'GitHub account connected successfully.' });
-      window.history.replaceState(null, '', '/sources');
-      fetchSources();
-    } else if (error) {
-      setBanner({ type: 'error', message: decodeURIComponent(error) });
-      window.history.replaceState(null, '', '/sources');
-    }
-  }, [searchParams, fetchSources]);
-
   // Auto-dismiss banner after 6 seconds
   useEffect(() => {
     if (!banner) return;
@@ -78,6 +59,25 @@ export default function SourcesPage() {
   useEffect(() => {
     fetchSources();
   }, [fetchSources]);
+
+  // ── Handle OAuth callback redirect params ──────────────────────────────────
+  useEffect(() => {
+    const connected = searchParams.get('connected');
+    const error = searchParams.get('error');
+
+    if (connected === 'notion') {
+      setBanner({ type: 'success', message: 'Notion workspace connected successfully.' });
+      window.history.replaceState(null, '', '/sources');
+      fetchSources();
+    } else if (connected === 'github') {
+      setBanner({ type: 'success', message: 'GitHub account connected successfully.' });
+      window.history.replaceState(null, '', '/sources');
+      fetchSources();
+    } else if (error) {
+      setBanner({ type: 'error', message: decodeURIComponent(error) });
+      window.history.replaceState(null, '', '/sources');
+    }
+  }, [searchParams, fetchSources]);
 
   // ── OAuth connect handlers (browser redirect, not fetch) ──────────────────
   const handleConnectNotion = () => {
