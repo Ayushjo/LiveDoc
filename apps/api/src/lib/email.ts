@@ -76,6 +76,23 @@ export async function sendPasswordResetEmail(opts: {
   });
 }
 
+export async function sendVerificationEmail(opts: {
+  to: string;
+  name: string;
+  verifyUrl: string;
+}): Promise<void> {
+  await sendEmail({
+    to: opts.to,
+    subject: 'Verify your LiveDoc email address',
+    html: baseHtml(`
+      <h2>Verify your email</h2>
+      <p>Hi ${opts.name || 'there'}, thanks for signing up for LiveDoc! Click the button below to verify your email address and activate your account.</p>
+      <a href="${opts.verifyUrl}" class="btn">Verify Email Address</a>
+      <p style="margin-top:24px">This link expires in 24 hours. If you didn't create a LiveDoc account, you can safely ignore this email.</p>
+    `),
+  });
+}
+
 export async function sendInvitationEmail(opts: {
   to: string;
   inviterName: string;
