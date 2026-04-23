@@ -141,7 +141,8 @@ model Source {
 
   metadata     Json       @default("{}")
   lastSyncedAt DateTime?
-  syncStatus   SyncStatus @default(IDLE)
+  syncStatus   SyncStatus   @default(IDLE)
+  syncInterval SyncInterval @default(MANUAL)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
