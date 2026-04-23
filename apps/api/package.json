@@ -14,6 +14,7 @@
     "db:reset": "prisma migrate reset"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.39.0",
     "@livedoc/types": "workspace:*",
     "@prisma/client": "^6.6.0",
     "better-auth": "^1.2.7",
@@ -21,8 +22,8 @@
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
     "express": "^4.21.2",
+    "express-rate-limit": "^8.4.0",
     "ioredis": "^5.4.1",
-    "@anthropic-ai/sdk": "^0.39.0",
     "resend": "^4.2.0",
     "zod": "^3.23.8"
   },
