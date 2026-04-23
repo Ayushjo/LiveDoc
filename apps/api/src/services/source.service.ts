@@ -75,7 +75,7 @@ export const sourceService = {
     state: string,
   ) {
     // Validate state — guards against CSRF
-    const raw = await redis.get(stateKey(state));
+    const raw = await redis.get(notionStateKey(state));
     if (!raw) {
       throw new BadRequestError(
         'OAuth state expired or invalid. Please start the connection flow again.',
@@ -85,7 +85,7 @@ export const sourceService = {
     const { workspaceId, userId } = JSON.parse(raw) as OAuthStatePayload;
 
     // Consume state immediately — one-time use
-    await redis.del(stateKey(state));
+    await redis.del(notionStateKey(state));
 
     // Exchange code for Notion access token
     const token = await notionService.exchangeOAuthCode(code);
