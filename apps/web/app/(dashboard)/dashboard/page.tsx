@@ -1,7 +1,11 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
-import { FileText, Database, GitCommit, Layers, RefreshCw, AlertCircle, CheckCircle2, Loader2 } from 'lucide-react';
+import Link from 'next/link';
+import {
+  FileText, Database, Layers, RefreshCw, AlertCircle,
+  CheckCircle2, Loader2, Zap, ArrowRight, GitCommit,
+} from 'lucide-react';
 import { useWorkspace } from '@/lib/workspace-context';
 import { api } from '@/lib/api';
 import type { ApiResponse, SyncStatus, SourceType } from '@livedoc/types';
@@ -14,11 +18,7 @@ interface RecentActivity {
   sourceType: SourceType;
   syncStatus: SyncStatus;
   lastSyncedAt: string | null;
-  lastJob: {
-    status: string;
-    createdAt: string;
-    documentsProcessed: number;
-  } | null;
+  lastJob: { status: string; createdAt: string; documentsProcessed: number } | null;
 }
 
 interface WorkspaceStats {
@@ -48,28 +48,82 @@ function relativeTime(dateStr: string | null): string {
   return `${Math.floor(hrs / 24)}d ago`;
 }
 
-function syncStatusDot(status: SyncStatus) {
-  if (status === 'SYNCING') return <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse shrink-0" />;
-  if (status === 'ERROR')   return <span className="w-2 h-2 rounded-full bg-destructive shrink-0" />;
-  return <span className="w-2 h-2 rounded-full bg-green-500 shrink-0" />;
-}
-
-// ─── Skeleton card ──────────────────────────────────────────────────────────────
+// ─── Skeleton ──────────────────────────────────────────────────────────────────
 
 function StatSkeleton() {
   return (
-    <div className="bg-card p-6 rounded-xl border border-border shadow-sm animate-pulse">
-      <div className="flex items-center justify-between pb-2">
-        <div className="h-3 w-28 bg-muted rounded" />
-        <div className="w-4 h-4 bg-muted rounded" />
+    <div className="bg-card rounded-xl border border-border shadow-card overflow-hidden">
+      <div className="h-0.5 animate-shimmer" />
+      <div className="p-5 space-y-3">
+        <div className="flex items-center justify-between">
+          <div className="h-3 w-24 bg-muted rounded animate-pulse" />
+          <div className="w-8 h-8 bg-muted rounded-lg animate-pulse" />
+        </div>
+        <div className="h-7 w-16 bg-muted rounded animate-pulse" />
+        <div className="h-2.5 w-32 bg-muted rounded animate-pulse" />
       </div>
-      <div className="h-8 w-20 bg-muted rounded mt-2 mb-1" />
-      <div className="h-3 w-24 bg-muted rounded" />
     </div>
   );
 }
 
+// ─── Source type icon ─────────────────────────────────────────────────────────
+
+function SourceTypeIcon({ type }: { type: SourceType }) {
+  if (type === 'GITHUB') {
+    return (
+      <svg viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4">
+        <path d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z" />
+      </svg>
+    );
+  }
+  return <Database className="w-4 h-4" />;
+}
+
 // ─── Page ──────────────────────────────────────────────────────────────────────
+
+const STAT_CONFIG = [
+  {
+    key: 'totalDocuments',
+    label: 'Documents',
+    icon: FileText,
+    color: 'text-blue-500',
+    bg: 'bg-blue-500/10',
+    bar: 'bg-blue-500',
+    sub: (v: number) =>
+      v === 0 ? 'Sync a source to populate' : `${v === 1 ? 'page' : 'pages'} indexed`,
+  },
+  {
+    key: 'totalSources',
+    label: 'Connected Sources',
+    icon: Database,
+    color: 'text-violet-500',
+    bg: 'bg-violet-500/10',
+    bar: 'bg-violet-500',
+    sub: (v: number) =>
+      v === 0 ? 'No sources yet' : `${v} active integration${v !== 1 ? 's' : ''}`,
+  },
+  {
+    key: 'totalChunks',
+    label: 'Total Chunks',
+    icon: GitCommit,
+    color: 'text-cyan-500',
+    bg: 'bg-cyan-500/10',
+    bar: 'bg-cyan-500',
+    sub: () => 'Semantic text chunks stored',
+  },
+  {
+    key: 'embeddedChunks',
+    label: 'Vectorised',
+    icon: Layers,
+    color: 'text-emerald-500',
+    bg: 'bg-emerald-500/10',
+    bar: 'bg-emerald-500',
+    sub: (v: number, stats: WorkspaceStats) =>
+      stats.totalChunks > 0
+        ? `${Math.round((v / stats.totalChunks) * 100)}% embedded in pgvector`
+        : 'Trigger a sync to embed',
+  },
+] as const;
 
 export default function DashboardPage() {
   const { activeWorkspace } = useWorkspace();
@@ -98,148 +152,167 @@ export default function DashboardPage() {
     fetchStats();
   }, [fetchStats]);
 
-  const STAT_CARDS = stats
-    ? [
-        {
-          label: 'Total Documents',
-          value: formatNumber(stats.totalDocuments),
-          icon: FileText,
-          sub: stats.totalDocuments === 0 ? 'Sync a source to populate' : 'Pages indexed from all sources',
-        },
-        {
-          label: 'Connected Sources',
-          value: formatNumber(stats.totalSources),
-          icon: Database,
-          sub: stats.totalSources === 0 ? 'No sources connected yet' : `${stats.totalSources} active integration${stats.totalSources !== 1 ? 's' : ''}`,
-        },
-        {
-          label: 'Total Chunks',
-          value: formatNumber(stats.totalChunks),
-          icon: GitCommit,
-          sub: 'Semantic chunks stored in DB',
-        },
-        {
-          label: 'Embedded Chunks',
-          value: formatNumber(stats.embeddedChunks),
-          icon: Layers,
-          sub: stats.totalChunks > 0
-            ? `${Math.round((stats.embeddedChunks / stats.totalChunks) * 100)}% vectorised in pgvector`
-            : 'Trigger a sync to start embedding',
-        },
-      ]
-    : [];
-
   return (
     <div className="space-y-8 animate-fade-in-up">
-      {/* Header */}
+
+      {/* ── Header ──────────────────────────────────────────────────────────── */}
       <div className="flex items-start justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Overview</h1>
-          <p className="text-muted-foreground mt-1">
+          <h1 className="text-2xl font-bold tracking-tight">Overview</h1>
+          <p className="text-sm text-muted-foreground mt-1">
             {activeWorkspace
-              ? `Live stats for ${activeWorkspace.name}`
+              ? `Workspace stats for ${activeWorkspace.name}`
               : 'Welcome to your LiveDoc workspace.'}
           </p>
         </div>
         <button
           onClick={fetchStats}
           disabled={isLoading}
-          className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-colors disabled:opacity-50"
+          className="flex items-center gap-2 px-3 h-8 text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-colors disabled:opacity-50 border border-border"
         >
-          <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
+          <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? 'animate-spin' : ''}`} />
           Refresh
         </button>
       </div>
 
-      {/* Error */}
+      {/* ── Error ───────────────────────────────────────────────────────────── */}
       {error && (
-        <div className="flex items-center gap-2 p-4 bg-destructive/10 border border-destructive/20 rounded-xl text-destructive text-sm">
+        <div className="flex items-center gap-2.5 p-4 bg-destructive/8 border border-destructive/20 rounded-xl text-destructive text-sm">
           <AlertCircle className="w-4 h-4 shrink-0" />
           {error}
         </div>
       )}
 
-      {/* Stat cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      {/* ── Stat cards ──────────────────────────────────────────────────────── */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {isLoading
           ? Array.from({ length: 4 }).map((_, i) => <StatSkeleton key={i} />)
-          : STAT_CARDS.map((stat) => {
-              const Icon = stat.icon;
+          : STAT_CONFIG.map((cfg) => {
+              const value = stats ? stats[cfg.key as keyof WorkspaceStats] as number : 0;
+              const Icon = cfg.icon;
               return (
-                <div key={stat.label} className="bg-card p-6 rounded-xl border border-border shadow-sm">
-                  <div className="flex flex-row items-center justify-between pb-2">
-                    <h3 className="tracking-tight text-sm font-medium text-muted-foreground">
-                      {stat.label}
-                    </h3>
-                    <Icon className="w-4 h-4 text-muted-foreground" />
+                <div
+                  key={cfg.label}
+                  className="bg-card rounded-xl border border-border shadow-card overflow-hidden group hover:shadow-card-hover transition-shadow duration-200"
+                >
+                  {/* Top accent bar */}
+                  <div className={`h-0.5 ${cfg.bar}`} />
+                  <div className="p-5">
+                    <div className="flex items-start justify-between mb-3">
+                      <p className="text-xs font-medium text-muted-foreground">{cfg.label}</p>
+                      <div className={`w-8 h-8 rounded-lg ${cfg.bg} flex items-center justify-center shrink-0`}>
+                        <Icon className={`w-4 h-4 ${cfg.color}`} />
+                      </div>
+                    </div>
+                    <p className="text-2xl font-bold tracking-tight">{formatNumber(value)}</p>
+                    <p className="text-[11px] text-muted-foreground mt-1.5">
+                      {stats
+                        ? (cfg.key === 'embeddedChunks'
+                          ? (cfg.sub as (v: number, s: WorkspaceStats) => string)(value, stats)
+                          : (cfg.sub as (v: number) => string)(value))
+                        : '—'}
+                    </p>
                   </div>
-                  <div className="text-2xl font-bold">{stat.value}</div>
-                  <p className="text-xs text-muted-foreground mt-1">{stat.sub}</p>
                 </div>
               );
             })}
       </div>
 
-      {/* Recent Sync Activity */}
-      <div className="bg-card border border-border rounded-xl shadow-sm overflow-hidden">
+      {/* ── Recent Sync Activity ─────────────────────────────────────────────── */}
+      <div className="bg-card border border-border rounded-xl shadow-card overflow-hidden">
         <div className="px-6 py-4 border-b border-border flex items-center justify-between">
-          <h3 className="font-semibold">Recent Sync Activity</h3>
-          {isLoading && <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />}
+          <div>
+            <h3 className="font-semibold text-sm">Recent Sync Activity</h3>
+            <p className="text-xs text-muted-foreground mt-0.5">Latest sync status across all sources</p>
+          </div>
+          <div className="flex items-center gap-3">
+            {isLoading && <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />}
+            <Link
+              href="/sources"
+              className="flex items-center gap-1 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
+            >
+              Manage sources
+              <ArrowRight className="w-3 h-3" />
+            </Link>
+          </div>
         </div>
 
         {!isLoading && (!stats || stats.recentActivity.length === 0) ? (
-          <div className="px-6 py-10 text-center text-muted-foreground">
-            <Database className="w-8 h-8 mx-auto mb-3 opacity-40" />
-            <p className="text-sm font-medium">No sources connected yet</p>
-            <p className="text-xs mt-1">
-              Go to{' '}
-              <a href="/sources" className="underline text-foreground">
-                Data Sources
-              </a>{' '}
-              and connect Notion to get started.
+          <div className="px-6 py-14 text-center">
+            <div className="w-12 h-12 rounded-xl bg-muted flex items-center justify-center mx-auto mb-4">
+              <Zap className="w-5 h-5 text-muted-foreground" />
+            </div>
+            <p className="text-sm font-semibold">No sources connected</p>
+            <p className="text-xs text-muted-foreground mt-1 mb-4">
+              Connect Notion or GitHub to start syncing your knowledge base.
             </p>
+            <Link
+              href="/sources"
+              className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold rounded-lg bg-foreground text-primary-foreground hover:bg-foreground/90 transition-all"
+            >
+              Add your first source
+              <ArrowRight className="w-3 h-3" />
+            </Link>
           </div>
         ) : (
           <div className="divide-y divide-border">
             {(stats?.recentActivity ?? []).map((item) => (
-              <div key={item.sourceId} className="px-6 py-4 flex items-center justify-between">
+              <Link
+                key={item.sourceId}
+                href={`/sources/${item.sourceId}`}
+                className="flex items-center justify-between px-6 py-3.5 hover:bg-muted/30 transition-colors group"
+              >
                 <div className="flex items-center gap-3">
-                  {syncStatusDot(item.syncStatus)}
+                  {/* Status dot */}
+                  <div
+                    className={`w-2 h-2 rounded-full shrink-0 ${
+                      item.syncStatus === 'SYNCING'
+                        ? 'bg-amber-500 animate-pulse'
+                        : item.syncStatus === 'ERROR'
+                          ? 'bg-destructive'
+                          : 'bg-emerald-500'
+                    }`}
+                  />
+                  <div className={`w-8 h-8 rounded-lg border border-border flex items-center justify-center text-muted-foreground shrink-0 bg-muted/40`}>
+                    <SourceTypeIcon type={item.sourceType} />
+                  </div>
                   <div>
-                    <p className="text-sm font-medium">{item.sourceName}</p>
-                    <p className="text-xs text-muted-foreground capitalize">
-                      {item.sourceType.toLowerCase()}
+                    <p className="text-sm font-medium leading-none">{item.sourceName}</p>
+                    <p className="text-[11px] text-muted-foreground mt-1 capitalize">
+                      {item.sourceType.toLowerCase().replace('_', ' ')}
                     </p>
                   </div>
                 </div>
-                <div className="flex items-center gap-3 text-right">
-                  <div>
+
+                <div className="flex items-center gap-4">
+                  <div className="text-right">
                     {item.syncStatus === 'SYNCING' ? (
-                      <span className="text-xs font-medium text-amber-500 flex items-center gap-1">
+                      <span className="inline-flex items-center gap-1 text-xs font-medium text-amber-500">
                         <RefreshCw className="w-3 h-3 animate-spin" />
                         Syncing…
                       </span>
                     ) : item.syncStatus === 'ERROR' ? (
-                      <span className="text-xs font-medium text-destructive flex items-center gap-1">
+                      <span className="inline-flex items-center gap-1 text-xs font-medium text-destructive">
                         <AlertCircle className="w-3 h-3" />
                         Sync failed
                       </span>
                     ) : item.lastSyncedAt ? (
-                      <span className="text-xs font-medium text-green-600 flex items-center gap-1">
+                      <span className="inline-flex items-center gap-1 text-xs font-medium text-emerald-600 dark:text-emerald-400">
                         <CheckCircle2 className="w-3 h-3" />
-                        Synced {relativeTime(item.lastSyncedAt)}
+                        {relativeTime(item.lastSyncedAt)}
                       </span>
                     ) : (
                       <span className="text-xs text-muted-foreground">Never synced</span>
                     )}
                     {item.lastJob && (
-                      <p className="text-[11px] text-muted-foreground">
-                        {item.lastJob.documentsProcessed} docs processed
+                      <p className="text-[11px] text-muted-foreground mt-0.5 text-right">
+                        {item.lastJob.documentsProcessed} docs
                       </p>
                     )}
                   </div>
+                  <ArrowRight className="w-3.5 h-3.5 text-muted-foreground/50 group-hover:text-muted-foreground group-hover:translate-x-0.5 transition-all" />
                 </div>
-              </div>
+              </Link>
             ))}
           </div>
         )}
