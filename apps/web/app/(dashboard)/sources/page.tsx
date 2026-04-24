@@ -3,7 +3,8 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { SourceCard } from '@/components/source-card';
-import { Plus, CheckCircle2, AlertCircle, Loader2, Zap } from 'lucide-react';
+import { UploadModal } from '@/components/upload-modal';
+import { Plus, CheckCircle2, AlertCircle, Loader2, Zap, FileUp } from 'lucide-react';
 import type { Source, SyncInterval } from '@livedoc/types';
 import type { ApiResponse } from '@livedoc/types';
 import { api } from '@/lib/api';
