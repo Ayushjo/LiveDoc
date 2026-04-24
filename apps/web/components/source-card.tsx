@@ -1,6 +1,6 @@
 'use client';
 
-import { RefreshCw, AlertCircle, CheckCircle2, Trash2, FileText, Clock, ChevronRight } from 'lucide-react';
+import { RefreshCw, AlertCircle, CheckCircle2, Trash2, FileText, Clock, ChevronRight, FolderOpen } from 'lucide-react';
 import Link from 'next/link';
 import type { Source, SyncInterval } from '@livedoc/types';
 
