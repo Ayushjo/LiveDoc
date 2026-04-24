@@ -162,37 +162,14 @@ export const uploadService = {
     // externalId = filename slug + content hash prefix for readability + uniqueness
     const externalId = `${filename.replace(/[^a-zA-Z0-9._-]/g, '_')}_${contentHash.slice(0, 12)}`;
 
-    // ── 3. Find or create the workspace UPLOAD source ────────────────────────
-    const source = await db.source.upsert({
-      where: {
-        // Use a synthetic unique filter: workspaceId + type UPLOAD
-        // We store only one UPLOAD source per workspace
-        // Prisma doesn't support partial unique on non-@@unique fields,
-        // so we use findFirst then create.
-        id: 'never-matches',
-      },
-      update: {},
-      create: {
-        workspaceId,
-        type: 'UPLOAD',
-        name: 'Uploaded Files',
-        encryptedAccessToken: '',
-        metadata: {},
-        syncStatus: 'IDLE',
-        syncInterval: 'MANUAL',
-      },
-    }).catch(async () => {
-      // Upsert by fake id never works — fall through to findFirst+create
-      return null as never;
+    // ── 3. Find or create the workspace UPLOAD source (one per workspace) ────
+    let uploadSource = await db.source.findFirst({
+      where: { workspaceId, type: 'UPLOAD' },
+      select: { id: true },
     });
 
-    const uploadSource = source ?? await (async () => {
-      const existing = await db.source.findFirst({
-        where: { workspaceId, type: 'UPLOAD' },
-        select: { id: true },
-      });
-      if (existing) return existing;
-      return db.source.create({
+    if (!uploadSource) {
+      uploadSource = await db.source.create({
         data: {
           workspaceId,
           type: 'UPLOAD',
@@ -203,7 +180,7 @@ export const uploadService = {
           syncInterval: 'MANUAL',
         },
       });
-    })();
+    }
 
     // ── 4. Dedup: check if this exact content already exists ─────────────────
     const existingDoc = await db.document.findUnique({
