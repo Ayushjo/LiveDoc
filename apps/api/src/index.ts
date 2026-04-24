@@ -9,6 +9,7 @@ import { syncRouter } from './routes/sync.routes';
 import { queryRouter } from './routes/query.routes';
 import { userRouter } from './routes/user.routes';
 import { invitationRouter, publicInvitationRouter } from './routes/invitation.routes';
+import { uploadRouter } from './routes/upload.routes';
 import { errorHandler } from './lib/errors';
 import { generalLimiter, authLimiter, queryLimiter, syncLimiter } from './lib/rate-limit';
 import { schedulerService } from './services/scheduler.service';
