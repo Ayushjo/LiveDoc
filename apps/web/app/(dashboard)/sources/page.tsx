@@ -90,6 +90,7 @@ export default function SourcesPage() {
   const [sources, setSources] = useState<Source[]>([]);
   const [isLoadingSources, setIsLoadingSources] = useState(true);
   const [isConnecting, setIsConnecting] = useState<'notion' | 'github' | null>(null);
+  const [showUploadModal, setShowUploadModal] = useState(false);
   const [banner, setBanner] = useState<BannerState>(null);
 
   useEffect(() => {
