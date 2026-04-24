@@ -136,8 +136,8 @@ export function SourceCard({ source, onSync, onDelete, onScheduleChange }: Sourc
         </div>
       </div>
 
-      {/* Schedule row */}
-      {onScheduleChange && (
+      {/* Schedule row — hidden for UPLOAD sources (no server-side sync) */}
+      {onScheduleChange && source.type !== 'UPLOAD' && (
         <div className="flex items-center gap-2 px-5 py-2 bg-muted/20 border-t border-border">
           <Clock className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
           <span className="text-[11px] text-muted-foreground">Auto-sync:</span>
