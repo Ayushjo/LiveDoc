@@ -79,7 +79,11 @@ export function SourceCard({ source, onSync, onDelete, onScheduleChange }: Sourc
     <div className="bg-card border border-border rounded-xl shadow-card overflow-hidden flex flex-col hover:shadow-card-hover hover:border-border/80 transition-all duration-200">
 
       {/* Top accent strip */}
-      <div className={`h-0.5 ${source.type === 'GITHUB' ? 'bg-foreground/80' : 'bg-foreground/40'}`} />
+      <div className={`h-0.5 ${
+        source.type === 'GITHUB'   ? 'bg-foreground/80' :
+        source.type === 'UPLOAD'   ? 'bg-blue-500/60'   :
+        'bg-foreground/40'
+      }`} />
 
       {/* Header */}
       <div className="flex items-start justify-between p-5 pb-4">
@@ -87,6 +91,8 @@ export function SourceCard({ source, onSync, onDelete, onScheduleChange }: Sourc
           <div className="w-9 h-9 rounded-lg bg-muted border border-border flex items-center justify-center shrink-0">
             {source.type === 'GITHUB'
               ? <GitHubIcon className="w-[18px] h-[18px] text-foreground" />
+              : source.type === 'UPLOAD'
+              ? <FolderOpen className="w-[18px] h-[18px] text-blue-500" />
               : <NotionIcon className="w-[18px] h-[18px] text-foreground" />
             }
           </div>
