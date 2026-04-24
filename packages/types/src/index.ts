@@ -2,7 +2,7 @@
 
 export type WorkspaceRole = 'OWNER' | 'ADMIN' | 'MEMBER';
 
-export type SourceType = 'NOTION' | 'GITHUB' | 'LINEAR' | 'GOOGLE_DRIVE';
+export type SourceType = 'NOTION' | 'GITHUB' | 'LINEAR' | 'GOOGLE_DRIVE' | 'UPLOAD';
 
 export type SyncStatus = 'IDLE' | 'SYNCING' | 'ERROR';
 
