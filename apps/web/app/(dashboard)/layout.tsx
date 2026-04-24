@@ -4,8 +4,27 @@ import { useSession, signOut } from '@/lib/auth-client';
 import { useRouter, usePathname } from 'next/navigation';
 import { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
-import { LayoutDashboard, Database, MessageSquareText, LogOut, Star, ChevronsUpDown, Loader2, Settings, Sun, Moon } from 'lucide-react';
+import {
+  LayoutDashboard, Database, MessageSquareText, LogOut,
+  ChevronsUpDown, Loader2, Settings, Sun, Moon,
+} from 'lucide-react';
 import { WorkspaceProvider, useWorkspace } from '@/lib/workspace-context';
+
+// ─── Logo mark ────────────────────────────────────────────────────────────────
+
+function LogoMark({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 32 32" fill="none" className={className} aria-hidden>
+      <rect width="32" height="32" rx="7" fill="currentColor" fillOpacity="0.12" />
+      <path
+        d="M9 8h9.5a5.5 5.5 0 0 1 0 11H9V8Zm0 11h2v5H9v-5Z"
+        fill="currentColor"
+        fillOpacity="1"
+      />
+      <circle cx="23" cy="22" r="3" fill="currentColor" fillOpacity="0.65" />
+    </svg>
+  );
+}
 
 // ─── Create-workspace gate ─────────────────────────────────────────────────────
 
@@ -17,12 +36,7 @@ function CreateWorkspaceScreen() {
   const [error, setError] = useState<string | null>(null);
 
   const slugify = (value: string) =>
-    value
-      .toLowerCase()
-      .replace(/[^a-z0-9\s-]/g, '')
-      .replace(/\s+/g, '-')
-      .replace(/-+/g, '-')
-      .slice(0, 48);
+    value.toLowerCase().replace(/[^a-z0-9\s-]/g, '').replace(/\s+/g, '-').replace(/-+/g, '-').slice(0, 48);
 
   const handleNameChange = (value: string) => {
     setName(value);
@@ -44,15 +58,15 @@ function CreateWorkspaceScreen() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background px-4">
-      <div className="w-full max-w-sm">
-        <div className="flex items-center gap-2 justify-center mb-8">
-          <Star className="w-6 h-6 fill-foreground text-foreground" />
-          <span className="font-semibold text-xl tracking-tight">LiveDoc</span>
+      <div className="w-full max-w-sm animate-scale-in">
+        <div className="flex items-center gap-2.5 justify-center mb-10">
+          <LogoMark className="w-9 h-9 text-foreground" />
+          <span className="font-bold text-xl tracking-tight">LiveDoc</span>
         </div>
-        <div className="bg-card border border-border rounded-xl p-8 shadow-sm">
-          <h1 className="text-xl font-bold mb-1">Create your workspace</h1>
-          <p className="text-sm text-muted-foreground mb-6">
-            Workspaces group your data sources, documents, and team members.
+        <div className="bg-card border border-border rounded-2xl p-8 shadow-card">
+          <h1 className="text-xl font-bold mb-1 tracking-tight">Create your workspace</h1>
+          <p className="text-sm text-muted-foreground mb-6 leading-relaxed">
+            Workspaces group your sources, documents, and team members.
           </p>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
@@ -62,15 +76,15 @@ function CreateWorkspaceScreen() {
                 value={name}
                 onChange={(e) => handleNameChange(e.target.value)}
                 placeholder="Acme Engineering"
-                className="w-full px-3 py-2.5 bg-background border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"
+                className="w-full h-10 px-3 bg-background border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-ring/20 transition-all placeholder:text-muted-foreground/60"
                 required
                 disabled={isCreating}
               />
             </div>
             <div>
               <label className="text-sm font-medium mb-1.5 block">URL slug</label>
-              <div className="flex items-center gap-0">
-                <span className="px-3 py-2.5 bg-muted border border-border border-r-0 rounded-l-lg text-sm text-muted-foreground">
+              <div className="flex items-center">
+                <span className="h-10 px-3 flex items-center bg-muted border border-border border-r-0 rounded-l-lg text-sm text-muted-foreground shrink-0">
                   livedoc.app/
                 </span>
                 <input
@@ -78,22 +92,20 @@ function CreateWorkspaceScreen() {
                   value={slug}
                   onChange={(e) => setSlug(slugify(e.target.value))}
                   placeholder="acme-engineering"
-                  className="flex-1 px-3 py-2.5 bg-background border border-border rounded-r-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"
+                  className="flex-1 h-10 px-3 bg-background border border-border rounded-r-lg text-sm focus:outline-none focus:ring-2 focus:ring-ring/20 transition-all placeholder:text-muted-foreground/60"
                   required
                   disabled={isCreating}
                 />
               </div>
             </div>
-            {error && (
-              <p className="text-sm text-destructive">{error}</p>
-            )}
+            {error && <p className="text-sm text-destructive">{error}</p>}
             <button
               type="submit"
               disabled={isCreating || !name.trim() || !slug.trim()}
-              className="w-full py-2.5 bg-foreground text-background text-sm font-medium rounded-lg hover:bg-foreground/90 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2"
+              className="w-full h-10 bg-foreground text-primary-foreground text-sm font-semibold rounded-lg hover:bg-foreground/90 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2 mt-1"
             >
               {isCreating && <Loader2 className="w-4 h-4 animate-spin" />}
-              {isCreating ? 'Creating...' : 'Create Workspace'}
+              {isCreating ? 'Creating…' : 'Create Workspace'}
             </button>
           </form>
         </div>
@@ -102,7 +114,16 @@ function CreateWorkspaceScreen() {
   );
 }
 
-// ─── Inner layout (inside WorkspaceProvider) ───────────────────────────────────
+// ─── Nav config ───────────────────────────────────────────────────────────────
+
+const NAV_LINKS = [
+  { href: '/dashboard', label: 'Overview',     icon: LayoutDashboard },
+  { href: '/sources',   label: 'Data Sources', icon: Database },
+  { href: '/query',     label: 'Query Room',   icon: MessageSquareText },
+  { href: '/settings',  label: 'Settings',     icon: Settings },
+];
+
+// ─── Inner layout ─────────────────────────────────────────────────────────────
 
 function DashboardLayoutInner({ children }: { children: React.ReactNode }) {
   const { data: session, isPending } = useSession();
@@ -131,92 +152,86 @@ function DashboardLayoutInner({ children }: { children: React.ReactNode }) {
   }, []);
 
   useEffect(() => {
-    if (!isPending && !session) {
-      router.push('/login');
-    }
+    if (!isPending && !session) router.push('/login');
   }, [session, isPending, router]);
 
-  // ── Auth loading / unauthenticated ─────────────────────────────────────────
+  // ── Loading ────────────────────────────────────────────────────────────────
   if (isPending || (wsLoading && !session)) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="animate-pulse flex flex-col items-center gap-2">
-          <Star className="w-8 h-8 text-muted-foreground animate-spin" />
-          <span className="text-sm text-muted-foreground">Loading...</span>
+        <div className="flex flex-col items-center gap-3">
+          <LogoMark className="w-10 h-10 text-foreground/40 animate-pulse" />
+          <p className="text-xs text-muted-foreground">Loading…</p>
         </div>
       </div>
     );
   }
 
   if (!session) return null;
+  if (!wsLoading && workspaces.length === 0) return <CreateWorkspaceScreen />;
 
-  // ── No workspace yet — show creation screen ────────────────────────────────
-  if (!wsLoading && workspaces.length === 0) {
-    return <CreateWorkspaceScreen />;
-  }
-
-  const NAV_LINKS = [
-    { href: '/dashboard', label: 'Overview', icon: LayoutDashboard },
-    { href: '/sources', label: 'Data Sources', icon: Database },
-    { href: '/query', label: 'Query Room', icon: MessageSquareText },
-    { href: '/settings', label: 'Settings', icon: Settings },
-  ];
+  const userInitial = session.user.name?.[0]?.toUpperCase() ?? 'U';
 
   return (
     <div className="min-h-screen flex bg-background text-foreground">
+
       {/* ── Sidebar ────────────────────────────────────────────────────────── */}
-      <aside className="w-64 border-r border-border bg-card flex flex-col">
+      <aside className="w-[220px] border-r border-border sidebar-bg flex flex-col shrink-0">
+
         {/* Logo */}
-        <div className="h-16 flex items-center px-6 border-b border-border">
-          <Link href="/dashboard" className="flex items-center gap-2">
-            <Star className="w-5 h-5 fill-foreground text-foreground" />
-            <span className="font-semibold tracking-tight text-lg">LiveDoc</span>
+        <div className="h-14 flex items-center px-4 border-b border-border shrink-0">
+          <Link href="/dashboard" className="flex items-center gap-2.5 group">
+            <LogoMark className="w-7 h-7 text-foreground" />
+            <span className="font-bold tracking-tight text-[15px]">LiveDoc</span>
           </Link>
         </div>
 
         {/* Workspace selector */}
         {workspaces.length > 0 && (
-          <div className="px-4 pt-4 pb-2">
+          <div className="px-3 pt-3 pb-2 border-b border-border shrink-0">
             {workspaces.length === 1 ? (
-              <div className="px-3 py-2 rounded-md bg-muted/50 border border-border">
-                <p className="text-xs text-muted-foreground mb-0.5 uppercase tracking-wider font-medium">Workspace</p>
-                <p className="text-sm font-semibold truncate">{activeWorkspace?.name}</p>
+              <div className="flex items-center gap-2 px-2 py-1.5 rounded-md">
+                <div className="w-5 h-5 rounded-[4px] bg-foreground/10 flex items-center justify-center text-[9px] font-bold uppercase shrink-0 border border-border">
+                  {activeWorkspace?.name?.[0] ?? 'W'}
+                </div>
+                <div className="min-w-0">
+                  <p className="text-[11px] text-muted-foreground leading-none">Workspace</p>
+                  <p className="text-xs font-semibold truncate mt-0.5">{activeWorkspace?.name}</p>
+                </div>
               </div>
             ) : (
               <div className="relative">
                 <select
                   value={activeWorkspace?.id ?? ''}
                   onChange={(e) => setActiveWorkspaceId(e.target.value)}
-                  className="w-full appearance-none px-3 py-2.5 pr-8 rounded-md bg-muted/50 border border-border text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-primary/20 cursor-pointer"
+                  className="w-full appearance-none px-2.5 h-9 pr-7 rounded-lg bg-muted/60 border border-border text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-ring/20 cursor-pointer"
                 >
                   {workspaces.map((ws) => (
-                    <option key={ws.id} value={ws.id}>
-                      {ws.name}
-                    </option>
+                    <option key={ws.id} value={ws.id}>{ws.name}</option>
                   ))}
                 </select>
-                <ChevronsUpDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground pointer-events-none" />
+                <ChevronsUpDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3 h-3 text-muted-foreground pointer-events-none" />
               </div>
             )}
           </div>
         )}
 
         {/* Nav links */}
-        <nav className="flex-1 py-4 px-4 space-y-1">
+        <nav className="flex-1 py-3 px-2.5 space-y-px overflow-y-auto">
           {NAV_LINKS.map((link) => {
             const Icon = link.icon;
-            const isActive = pathname === link.href;
+            const isActive = pathname === link.href || pathname.startsWith(link.href + '/');
             return (
               <Link
                 key={link.href}
                 href={link.href}
-                className={`flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                className={`flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-[13px] font-medium transition-all duration-100 ${
                   isActive
-                    ? 'bg-foreground text-background shadow-sm'
+                    ? 'bg-foreground text-primary-foreground shadow-sm'
                     : 'text-muted-foreground hover:bg-muted hover:text-foreground'
                 }`}
               >
-                <Icon className="w-4 h-4" />
+                <Icon className="w-[15px] h-[15px] shrink-0" />
                 {link.label}
               </Link>
             );
@@ -224,40 +239,41 @@ function DashboardLayoutInner({ children }: { children: React.ReactNode }) {
         </nav>
 
         {/* User footer */}
-        <div className="p-4 border-t border-border">
-          <Link href="/settings" className="flex items-center gap-3 px-3 py-2 mb-2 rounded-md hover:bg-muted transition-colors group">
-            <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-sm group-hover:bg-primary/20 transition-colors">
-              {session.user.name?.[0]?.toUpperCase() || 'U'}
+        <div className="p-2.5 border-t border-border space-y-px shrink-0">
+          <Link
+            href="/settings"
+            className="flex items-center gap-2.5 px-2.5 py-2 rounded-lg hover:bg-muted transition-colors group"
+          >
+            <div className="w-6 h-6 rounded-full bg-foreground/10 border border-border flex items-center justify-center text-[10px] font-bold shrink-0">
+              {userInitial}
             </div>
-            <div className="flex-1 truncate">
-              <p className="text-sm font-medium truncate">{session.user.name}</p>
-              <p className="text-xs text-muted-foreground truncate">{session.user.email}</p>
+            <div className="flex-1 min-w-0">
+              <p className="text-[12px] font-semibold truncate leading-none">{session.user.name}</p>
+              <p className="text-[10px] text-muted-foreground truncate mt-0.5 leading-none">{session.user.email}</p>
             </div>
           </Link>
-          <div className="flex items-center gap-2">
+
+          <div className="flex items-center gap-1">
             <button
               onClick={toggleTheme}
-              className="flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
-              title={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
+              className="flex items-center justify-center w-8 h-8 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+              title={isDark ? 'Light mode' : 'Dark mode'}
             >
-              {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+              {isDark ? <Sun className="w-3.5 h-3.5" /> : <Moon className="w-3.5 h-3.5" />}
             </button>
             <button
-              onClick={async () => {
-                await signOut();
-                router.push('/login');
-              }}
-              className="flex-1 flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium text-destructive hover:bg-destructive/10 transition-colors"
+              onClick={async () => { await signOut(); router.push('/login'); }}
+              className="flex-1 flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[12px] font-medium text-muted-foreground hover:text-destructive hover:bg-destructive/8 transition-colors"
             >
-              <LogOut className="w-4 h-4" />
-              Sign Out
+              <LogOut className="w-3.5 h-3.5 shrink-0" />
+              Sign out
             </button>
           </div>
         </div>
       </aside>
 
       {/* ── Main content ───────────────────────────────────────────────────── */}
-      <main className="flex-1 flex flex-col h-screen overflow-y-auto bg-muted/30">
+      <main className="flex-1 flex flex-col h-screen overflow-y-auto">
         <div className="p-8 max-w-5xl mx-auto w-full flex-1 flex flex-col">
           {children}
         </div>
@@ -266,7 +282,7 @@ function DashboardLayoutInner({ children }: { children: React.ReactNode }) {
   );
 }
 
-// ─── Exported layout (wraps everything in WorkspaceProvider) ──────────────────
+// ─── Export ───────────────────────────────────────────────────────────────────
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   return (
