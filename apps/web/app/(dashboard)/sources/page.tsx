@@ -239,6 +239,13 @@ export default function SourcesPage() {
             disabled={isConnecting !== null || !activeWorkspace}
           />
           <ConnectorCard
+            icon={<FileUp className="w-5 h-5 text-foreground" />}
+            name="Upload Files"
+            description="Upload PDFs, DOCX, TXT, or Markdown to index locally."
+            onClick={() => setShowUploadModal(true)}
+            disabled={!activeWorkspace}
+          />
+          <ConnectorCard
             icon={
               <svg viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
                 <path d="M12.48 10.92v2.33h6.84c-.28 1.47-1.07 2.77-2.28 3.62-1.04.7-2.37 1.1-3.73 1.1-3.69 0-6.79-2.5-7.91-5.87H2.8v2.44C4.77 18.25 8.33 21 12.48 21c2.62 0 4.9-.87 6.52-2.35l1.58 1.55c.23.22.58.22.82 0l.74-.73a.58.58 0 0 0 0-.83l-1.56-1.53C21.62 15.83 22 14.18 22 12.37V11.5a.5.5 0 0 0-.5-.5h-9a.5.5 0 0 0-.02-.08z" />
