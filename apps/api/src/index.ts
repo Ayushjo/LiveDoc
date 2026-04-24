@@ -57,6 +57,7 @@ app.use('/api/invitations', publicInvitationRouter);
 app.use('/api/sources', sourceRouter);
 app.use('/api/sync', syncLimiter, syncRouter);
 app.use('/api/query', queryLimiter, queryRouter);
+app.use('/api/upload', uploadRouter);
 
 // ── Central error handler (must be last) ──────────────────────────────────────
 app.use(errorHandler);
