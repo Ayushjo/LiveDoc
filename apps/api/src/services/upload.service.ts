@@ -245,7 +245,8 @@ export const uploadService = {
             content: rc.content,
             chunkIndex: i,
             tokenCount: rc.tokenCount,
-            metadata: rc.metadata,
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            metadata: rc.metadata as any,
           },
         }),
       ),
