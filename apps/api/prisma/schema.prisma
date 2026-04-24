@@ -161,6 +161,7 @@ enum SourceType {
   GITHUB
   LINEAR
   GOOGLE_DRIVE
+  UPLOAD
 }
 
 enum SyncStatus {
