@@ -320,6 +320,18 @@ export default function SourcesPage() {
           </div>
         )}
       </section>
+
+      {/* Upload modal */}
+      {showUploadModal && activeWorkspace && (
+        <UploadModal
+          workspaceId={activeWorkspace.id}
+          onClose={() => setShowUploadModal(false)}
+          onSuccess={() => {
+            fetchSources();
+            setBanner({ type: 'success', message: 'Files uploaded and indexed successfully.' });
+          }}
+        />
+      )}
     </div>
   );
 }
