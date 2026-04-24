@@ -13,7 +13,7 @@ if (!process.env.ANTHROPIC_API_KEY) {
 export const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
 /** Model used for streaming RAG answers. */
-export const CLAUDE_MODEL = 'claude-3-5-haiku-20241022' as const;
+export const CLAUDE_MODEL = 'claude-haiku-4-5-20251001' as const;
 
 // Re-export Voyage helpers so existing imports of lib/ai still work
 export { embedTexts, EMBEDDING_MODEL, EMBEDDING_DIMS } from './voyage';
