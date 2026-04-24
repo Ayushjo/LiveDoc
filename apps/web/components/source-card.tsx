@@ -167,7 +167,7 @@ export function SourceCard({ source, onSync, onDelete, onScheduleChange }: Sourc
           </p>
         </div>
 
-        {onSync && (
+        {onSync && source.type !== 'UPLOAD' && (
           <button
             onClick={() => onSync(source.id)}
             disabled={isSyncing}
