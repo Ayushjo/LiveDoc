@@ -450,13 +450,62 @@ export const githubService = {
     }
 
     const MAX_FILE_SIZE = 500 * 1024; // 500 KB
+    const MIN_FILE_SIZE = 64;        // bytes — skip near-empty stubs
+
+    // Directory prefixes that are never useful to index
+    const EXCLUDED_DIR_PREFIXES = [
+      'node_modules/',
+      'vendor/',
+      '.git/',
+      'dist/',
+      'build/',
+      '.next/',
+      '.nuxt/',
+      'out/',
+      'coverage/',
+      '__pycache__/',
+      '.venv/',
+      'venv/',
+      'env/',
+      '.cache/',
+      '.turbo/',
+      'public/',   // static assets, not docs
+    ];
+
+    // Filenames that are generated / package metadata — not useful as knowledge
+    const EXCLUDED_FILENAMES = new Set([
+      'changelog.md',
+      'history.md',
+      'changes.md',
+      'authors.md',
+      'contributors.md',
+      'license.md',
+      'licence.md',
+      'copying.md',
+      'patents.md',
+      'notice.md',
+    ]);
+
+    const isExcludedPath = (path: string): boolean => {
+      const lower = path.toLowerCase();
+      // Skip if inside an excluded directory anywhere in the path
+      if (EXCLUDED_DIR_PREFIXES.some((prefix) => lower.startsWith(prefix))) return true;
+      if (lower.includes('/node_modules/')) return true;
+      if (lower.includes('/vendor/')) return true;
+      // Skip excluded filenames (in any directory)
+      const filename = lower.split('/').pop() ?? '';
+      if (EXCLUDED_FILENAMES.has(filename)) return true;
+      return false;
+    };
 
     return tree.tree
       .filter(
         (item) =>
           item.type === 'blob' &&
           /\.(md|mdx|markdown)$/i.test(item.path) &&
-          (item.size ?? 0) <= MAX_FILE_SIZE,
+          (item.size ?? 0) >= MIN_FILE_SIZE &&
+          (item.size ?? 0) <= MAX_FILE_SIZE &&
+          !isExcludedPath(item.path),
       )
       .map((item) => ({
         path: item.path,
